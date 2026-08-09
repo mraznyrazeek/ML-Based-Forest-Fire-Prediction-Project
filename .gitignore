@@ -1,0 +1,21 @@
+# Large MESOGEOS raw NetCDF dataset
+dataset/mesogeos_dataset/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
