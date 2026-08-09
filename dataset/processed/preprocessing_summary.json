@@ -1,0 +1,16 @@
+{
+    "training_records": 9042,
+    "testing_records": 2261,
+    "training_features": 44,
+    "testing_features": 44,
+    "target": "log_burned_area",
+    "target_transformation": "log1p(burned_area_ha)",
+    "missing_values_training": 0,
+    "missing_values_testing": 0,
+    "train_test_split": "80/20",
+    "imputation": "Median imputation fitted on training data only",
+    "missingness_indicators": true,
+    "temporal_cyclical_features": true,
+    "wind_direction_cyclical_features": true,
+    "land_cover_total_validated": true
+}
