@@ -2,10 +2,6 @@ import pandas as pd
 from pathlib import Path
 
 
-# ============================================================
-# LOAD DATASET
-# ============================================================
-
 file_path = Path("dataset/mesogeos_wildfire_dataset.csv")
 
 df = pd.read_csv(file_path)
@@ -14,11 +10,7 @@ print("=" * 60)
 print("MESOGEOS DATASET VALIDATION")
 print("=" * 60)
 
-
-# ============================================================
 # BASIC INFORMATION
-# ============================================================
-
 print("\n--- BASIC INFORMATION ---")
 
 print(f"Rows:    {len(df):,}")
@@ -27,11 +19,7 @@ print(f"Columns: {len(df.columns):,}")
 print("\nData types:")
 print(df.dtypes)
 
-
-# ============================================================
 # MISSING VALUES
-# ============================================================
-
 print("\n--- MISSING VALUES ---")
 
 missing = df.isnull().sum()
@@ -43,31 +31,19 @@ if len(missing) == 0:
 else:
     print(missing)
 
-
-# ============================================================
 # DUPLICATES
-# ============================================================
-
 print("\n--- DUPLICATES ---")
 
 duplicates = df.duplicated().sum()
 
 print(f"Duplicate rows: {duplicates:,}")
 
-
-# ============================================================
 # TARGET INFORMATION
-# ============================================================
-
 print("\n--- BURNED AREA ---")
 
 print(df["burned_area_ha"].describe())
 
-
-# ============================================================
 # TARGET PERCENTILES
-# ============================================================
-
 print("\n--- BURNED AREA PERCENTILES ---")
 
 percentiles = df["burned_area_ha"].quantile(
@@ -76,11 +52,7 @@ percentiles = df["burned_area_ha"].quantile(
 
 print(percentiles)
 
-
-# ============================================================
 # YEAR DISTRIBUTION
-# ============================================================
-
 print("\n--- RECORDS BY YEAR ---")
 
 print(
@@ -89,11 +61,7 @@ print(
     .sort_index()
 )
 
-
-# ============================================================
 # MONTH DISTRIBUTION
-# ============================================================
-
 print("\n--- RECORDS BY MONTH ---")
 
 print(
@@ -102,11 +70,7 @@ print(
     .sort_index()
 )
 
-
-# ============================================================
 # NUMERICAL SUMMARY
-# ============================================================
-
 print("\n--- NUMERICAL SUMMARY ---")
 
 print(
@@ -115,11 +79,7 @@ print(
     .to_string()
 )
 
-
-# ============================================================
 # CHECK INFINITE VALUES
-# ============================================================
-
 print("\n--- INFINITE VALUES ---")
 
 numeric_df = df.select_dtypes(include="number")
@@ -137,11 +97,7 @@ if len(infinite_values) == 0:
 else:
     print(infinite_values)
 
-
-# ============================================================
 # CHECK IMPORTANT FEATURE RANGES
-# ============================================================
-
 print("\n--- IMPORTANT FEATURE RANGES ---")
 
 features_to_check = [

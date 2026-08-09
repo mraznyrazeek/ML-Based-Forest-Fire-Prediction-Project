@@ -6,10 +6,7 @@ from pathlib import Path
 file_path = Path("dataset/mesogeos_wildfire_dataset.csv")
 df = pd.read_csv(file_path)
 
-# --------------------------------------------------
-# 1. Burned area distribution
-# --------------------------------------------------
-
+# Burned area distribution
 plt.figure(figsize=(10, 6))
 
 plt.hist(
@@ -24,11 +21,7 @@ plt.title("Distribution of Wildfire Burned Area")
 plt.tight_layout()
 plt.show()
 
-
-# --------------------------------------------------
-# 2. Log-transformed burned area
-# --------------------------------------------------
-
+# Log-transformed burned area
 plt.figure(figsize=(10, 6))
 
 plt.hist(
@@ -43,11 +36,7 @@ plt.title("Log-Transformed Burned Area Distribution")
 plt.tight_layout()
 plt.show()
 
-
-# --------------------------------------------------
-# 3. Missing values
-# --------------------------------------------------
-
+# Missing values
 missing = df.isnull().sum()
 
 missing = missing[missing > 0].sort_values(

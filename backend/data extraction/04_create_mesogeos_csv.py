@@ -4,13 +4,8 @@ import numpy as np
 import pandas as pd
 
 
-# ============================================================
-# SETTINGS
-# ============================================================
-
 DATASET_DIR = Path("dataset/mesogeos_dataset")
 OUTPUT_FILE = Path("dataset/mesogeos_wildfire_dataset.csv")
-
 
 # ============================================================
 # EXTRACT ONE FIRE SAMPLE
@@ -21,10 +16,7 @@ def extract_fire_sample(file_path):
     try:
         ds = xr.open_dataset(file_path)
 
-        # ----------------------------------------------------
         # Find ignition point
-        # ----------------------------------------------------
-
         ignition = ds["ignition_points"].isel(time=0).values
 
         rows, cols = np.where(
@@ -39,10 +31,7 @@ def extract_fire_sample(file_path):
         row = rows[0]
         col = cols[0]
 
-        # ----------------------------------------------------
         # Basic information
-        # ----------------------------------------------------
-
         date = pd.Timestamp(ds.time.values[0])
 
         latitude = float(ds.y.values[row])
@@ -50,10 +39,7 @@ def extract_fire_sample(file_path):
 
         burned_area = float(ignition[row, col])
 
-        # ----------------------------------------------------
         # Extract values
-        # ----------------------------------------------------
-
         temperature_k = float(
             ds["t2m"].isel(time=0, y=row, x=col).values
         )
@@ -74,10 +60,7 @@ def extract_fire_sample(file_path):
             ds["slope"].isel(y=row, x=col).values
         )
 
-        # ----------------------------------------------------
         # Build record
-        # ----------------------------------------------------
-
         record = {
 
             # Fire information
@@ -233,22 +216,14 @@ def extract_fire_sample(file_path):
 
         return None
 
-
-# ============================================================
 # FIND ALL NETCDF FILES
-# ============================================================
-
 print("Searching for Mesogeos files...")
 
 files = sorted(DATASET_DIR.rglob("*.nc"))
 
 print(f"Found {len(files):,} NetCDF files.")
 
-
-# ============================================================
 # PROCESS FILES
-# ============================================================
-
 records = []
 
 for i, file_path in enumerate(files, start=1):
@@ -266,18 +241,11 @@ for i, file_path in enumerate(files, start=1):
             f"| Valid records: {len(records):,}"
         )
 
-
-# ============================================================
 # CREATE DATAFRAME
-# ============================================================
-
 df = pd.DataFrame(records)
 
 
-# ============================================================
 # ADD DATE FEATURES
-# ============================================================
-
 if not df.empty:
 
     df["year"] = df["date"].dt.year
@@ -287,20 +255,14 @@ if not df.empty:
     df["day_of_year"] = df["date"].dt.dayofyear
 
 
-# ============================================================
 # SAVE CSV
-# ============================================================
-
 df.to_csv(
     OUTPUT_FILE,
     index=False
 )
 
 
-# ============================================================
 # SUMMARY
-# ============================================================
-
 print("\n========================================")
 print("DATASET CREATION COMPLETE")
 print("========================================")
