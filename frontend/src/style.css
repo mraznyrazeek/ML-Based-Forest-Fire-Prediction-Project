@@ -1,2 +1,41 @@
 
 @import "tailwindcss";
+
+
+/* Wildfire Intelligence — Global Design Tokens */
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #102238;
+  background: #f5f8fb;
+
+  --wi-navy: #071827;
+  --wi-navy-light: #102b40;
+  --wi-teal: #008f87;
+  --wi-orange: #f36b21;
+  --wi-blue: #328fe8;
+  --wi-canvas: #f5f8fb;
+  --wi-surface: #ffffff;
+  --wi-text: #102238;
+  --wi-muted: #62758d;
+  --wi-border: #dce6ee;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--wi-canvas);
+}
+
+#app {
+  min-height: 100vh;
+}
+
+::selection {
+  background: #b7e8e2;
+  color: var(--wi-navy);
+}
