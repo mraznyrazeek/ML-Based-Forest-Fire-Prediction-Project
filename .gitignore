@@ -19,3 +19,15 @@ venv/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Node.js dependencies
+node_modules/
+
+# Frontend production builds
+dist/
+
+# Frontend development caches
+.vite/
+
+# Local npm debug logs
+npm-debug.log*
