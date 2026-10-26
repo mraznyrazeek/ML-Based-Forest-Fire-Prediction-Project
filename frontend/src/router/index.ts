@@ -4,6 +4,7 @@ import DashboardLayout from '@/layouts/DashboardLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+
   routes: [
     {
       path: '/',
@@ -13,6 +14,11 @@ const router = createRouter({
           path: '',
           name: 'overview',
           component: () => import('@/views/HomeView.vue'),
+        },
+        {
+          path: 'prediction',
+          name: 'prediction',
+          component: () => import('@/views/PredictionView.vue'),
         },
       ],
     },

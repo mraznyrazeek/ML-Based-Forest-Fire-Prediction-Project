@@ -101,7 +101,7 @@ const navigation = [
                  border-transparent px-4 py-3.5 text-sm font-medium
                  text-slate-300 transition-all duration-200
                  hover:bg-white/5 hover:text-white"
-          active-class="!border-[var(--wi-orange)] !bg-orange-500/15 !text-orange-300"
+          exact-active-class="!border-[var(--wi-orange)] !bg-orange-500/15 !text-orange-300"
           @click="sidebarOpen = false"
         >
           <i
