@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { predictBurnedArea, type PredictionResult } from '@/services/predictionService'
 import { validatePredictionInputs } from '@/utils/predictionValidation'
+import HistoricalEvaluation from '@/components/prediction/HistoricalEvaluation.vue'
 
 import GeographicalInputs from '@/components/prediction/GeographicalInputs.vue'
 import EnvironmentalInputs from '@/components/prediction/EnvironmentalInputs.vue'
 import LandCoverInputs from '@/components/prediction/LandCoverInputs.vue'
 
 type PredictionValue = string | number | null
+type PredictionMode = 'manual' | 'historical'
+const activeMode = ref<PredictionMode>('manual')
 
 // Shared prediction form state
 const predictionInputs = reactive<Record<string, PredictionValue>>({
@@ -45,13 +49,37 @@ const predictionInputs = reactive<Record<string, PredictionValue>>({
   lc_wetland: 0,
 })
 
-// Receive updates from child components
+// Prediction state and request sequence guard.
+const prediction = ref<PredictionResult | null>(null)
+const predictionError = ref('')
+const isPredicting = ref(false)
+const inputsChangedAfterPrediction = ref(false)
+let requestSequence = 0
+
+// Receive updates from child components. Discard outdated results, including
+// responses from a request that was in flight when the inputs changed.
 function updateInputs(values: Record<string, PredictionValue>) {
   Object.assign(predictionInputs, values)
+  requestSequence += 1
+  if (prediction.value || isPredicting.value) {
+    inputsChangedAfterPrediction.value = true
+  }
+  prediction.value = null
+  predictionError.value = ''
+  isPredicting.value = false
 }
 
 // Validation state
 const showValidation = ref(false)
+
+type InputSection = 'geography' | 'environment' | 'landcover'
+const activeSection = ref<InputSection>('geography')
+const sections: { id: InputSection; label: string; icon: string }[] = [
+  { id: 'geography', label: 'Location', icon: 'pi pi-map-marker' },
+  { id: 'environment', label: 'Environment', icon: 'pi pi-cloud' },
+  { id: 'landcover', label: 'Land Cover', icon: 'pi pi-chart-pie' },
+]
+const errorCount = computed(() => validation.value.errors.length)
 
 // Automatically recalculate validation when inputs change
 const validation = computed(() => validatePredictionInputs(predictionInputs))
@@ -60,187 +88,247 @@ const validation = computed(() => validatePredictionInputs(predictionInputs))
 function checkPredictionInputs() {
   showValidation.value = true
 }
+
+async function submitPrediction() {
+  showValidation.value = true
+  if (!validation.value.valid || isPredicting.value) return
+
+  const currentRequest = ++requestSequence
+  isPredicting.value = true
+  predictionError.value = ''
+  prediction.value = null
+  inputsChangedAfterPrediction.value = false
+
+  try {
+    // Snapshot inputs so the payload remains stable during the request.
+    const result = await predictBurnedArea({ ...predictionInputs })
+    if (currentRequest === requestSequence) prediction.value = result
+  } catch (error: unknown) {
+    if (currentRequest === requestSequence) {
+      predictionError.value =
+        error instanceof Error ? error.message : 'Prediction failed. Please try again.'
+    }
+  } finally {
+    if (currentRequest === requestSequence) isPredicting.value = false
+  }
+}
 </script>
 
 <template>
-  <div class="space-y-8">
-    <!-- Prediction page header -->
+  <div class="space-y-5">
+    <!-- Compact research header -->
     <header
-      class="relative overflow-hidden rounded-3xl border border-[var(--wi-border)] bg-white p-7 shadow-sm sm:p-9"
+      class="rounded-2xl border border-[var(--wi-border)] bg-white px-5 py-5 shadow-sm sm:px-7"
     >
-      <!-- Scientific theme decoration -->
-      <div
-        class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-teal-100/50 blur-3xl"
-      ></div>
-
-      <div
-        class="pointer-events-none absolute -bottom-24 right-24 h-48 w-48 rounded-full bg-orange-100/50 blur-3xl"
-      ></div>
-
-      <div class="relative">
-        <div class="mb-4 flex items-center gap-2">
-          <span class="h-2 w-2 rounded-full bg-[var(--wi-teal)]"></span>
-
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--wi-orange)]">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--wi-orange)]">
             Machine Learning Research
           </p>
+          <h1 class="mt-1 text-2xl font-extrabold text-[var(--wi-text)] sm:text-3xl">
+            Burned Area <span class="text-[var(--wi-orange)]">Prediction</span>
+          </h1>
+          <p class="mt-1 max-w-3xl text-sm text-[var(--wi-muted)]">
+            Estimate eventual burned area of an existing wildfire using the experimental XGBoost
+            model.
+          </p>
         </div>
-
-        <h1 class="text-3xl font-extrabold tracking-tight text-[var(--wi-text)] sm:text-4xl">
-          Burned Area
-          <span class="text-[var(--wi-orange)]"> Prediction </span>
-        </h1>
-
-        <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--wi-muted)] sm:text-base">
-          Estimate the eventual burned area of an existing wildfire using the optimized XGBoost
-          research model and validated environmental and geographical inputs.
-        </p>
-
-        <!-- Model information badges -->
-        <div class="mt-5 flex flex-wrap gap-2">
-          <span
-            class="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700"
-          >
-            <i class="pi pi-chart-line mr-1" aria-hidden="true"></i>
-            XGBoost Regression
-          </span>
-
-          <span
-            class="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
-          >
-            <i class="pi pi-database mr-1" aria-hidden="true"></i>
-            Mesogeos Research Data
-          </span>
-
-          <span
-            class="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700"
-          >
-            <i class="pi pi-info-circle mr-1" aria-hidden="true"></i>
-            Experimental Research
-          </span>
-        </div>
+        <span
+          class="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700"
+          >XGBoost · Mesogeos</span
+        >
       </div>
     </header>
 
-    <!-- Prediction interface -->
-    <section class="grid items-start gap-6 lg:grid-cols-3">
+    <!-- Top-level workflow selection. Keep the manual form mounted with v-show. -->
+    <nav
+      class="grid grid-cols-2 gap-2 rounded-xl border border-[var(--wi-border)] bg-white p-1.5 shadow-sm"
+      aria-label="Prediction workflow"
+    >
+      <button
+        id="workflow-tab-manual"
+        type="button"
+        :aria-pressed="activeMode === 'manual'"
+        class="flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold transition-colors"
+        :class="
+          activeMode === 'manual'
+            ? 'bg-teal-50 text-teal-800 shadow-sm'
+            : 'text-slate-600 hover:bg-slate-50'
+        "
+        @click="activeMode = 'manual'"
+      >
+        <i class="pi pi-sliders-h" aria-hidden="true"></i>
+        Manual Prediction
+      </button>
+      <button
+        id="workflow-tab-historical"
+        type="button"
+        :aria-pressed="activeMode === 'historical'"
+        class="flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold transition-colors"
+        :class="
+          activeMode === 'historical'
+            ? 'bg-orange-50 text-orange-800 shadow-sm'
+            : 'text-slate-600 hover:bg-slate-50'
+        "
+        @click="activeMode = 'historical'"
+      >
+        <i class="pi pi-chart-bar" aria-hidden="true"></i>
+        Historical Evaluation
+      </button>
+    </nav>
+
+    <!-- Historical evaluation: component requests genuine held-out data from Flask. -->
+    <div
+      v-if="activeMode === 'historical'"
+      class="rounded-2xl border border-[var(--wi-border)] bg-white p-5 shadow-sm sm:p-7"
+    >
+      <HistoricalEvaluation />
+    </div>
+
+    <!-- Prediction interface. v-show retains form inputs and prediction on mode switches. -->
+    <section v-show="activeMode === 'manual'" class="grid items-start gap-6 lg:grid-cols-3">
       <!-- Main input panel -->
       <div
         class="rounded-2xl border border-[var(--wi-border)] bg-white p-6 shadow-sm sm:p-7 lg:col-span-2"
       >
-        <!-- Input panel heading -->
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700"
-          >
-            <i class="pi pi-sliders-h text-lg" aria-hidden="true"></i>
-          </div>
-
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-xl font-bold text-[var(--wi-text)]">Wildfire Input Parameters</h2>
-
-            <p class="mt-1 text-sm text-[var(--wi-muted)]">
-              Environmental, geographical and land-cover inputs
+            <h2 class="text-lg font-bold text-[var(--wi-text)]">Wildfire Input Parameters</h2>
+            <p class="mt-1 text-xs text-[var(--wi-muted)]">
+              Three sections · values are retained as you switch
             </p>
           </div>
+          <span
+            class="rounded-lg px-3 py-1.5 text-xs font-semibold"
+            :class="validation.valid ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-600'"
+          >
+            <i
+              :class="validation.valid ? 'pi pi-check-circle' : 'pi pi-info-circle'"
+              class="mr-1"
+              aria-hidden="true"
+            ></i>
+            {{ validation.valid ? 'Inputs complete' : `${errorCount} checks remaining` }}
+          </span>
         </div>
 
-        <!-- Information banner -->
-        <div class="mt-6 flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
-          <i class="pi pi-info-circle mt-0.5 text-blue-600" aria-hidden="true"></i>
-
-          <p class="text-sm leading-6 text-blue-900">
-            This form follows the Mesogeos research feature schema. Enter the observation date,
-            geographical measurements, available environmental data and land-cover proportions. The
-            backend will generate the engineered features required by the trained XGBoost model.
-          </p>
+        <!-- Tab navigation; v-show preserves each child's local form values -->
+        <div
+          class="mt-5 grid grid-cols-3 gap-2 rounded-xl bg-slate-100 p-1.5"
+          role="tablist"
+          aria-label="Prediction input sections"
+        >
+          <button
+            v-for="section in sections"
+            :key="section.id"
+            :id="`prediction-tab-${section.id}`"
+            type="button"
+            role="tab"
+            :aria-selected="activeSection === section.id"
+            :aria-controls="`prediction-panel-${section.id}`"
+            class="flex min-w-0 items-center justify-center gap-2 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors sm:text-sm"
+            :class="
+              activeSection === section.id
+                ? 'bg-white text-teal-800 shadow-sm'
+                : 'text-slate-600 hover:bg-white/60'
+            "
+            @click="activeSection = section.id"
+          >
+            <i :class="section.icon" aria-hidden="true"></i>
+            <span>{{ section.label }}</span>
+          </button>
         </div>
 
-        <!-- Observation and geographical inputs -->
-        <div class="mt-8 border-t border-[var(--wi-border)] pt-8">
+        <div
+          id="prediction-panel-geography"
+          v-show="activeSection === 'geography'"
+          role="tabpanel"
+          aria-labelledby="prediction-tab-geography"
+          class="mt-5"
+        >
           <GeographicalInputs @change="updateInputs" />
         </div>
-
-        <!-- Weather and environmental inputs -->
-        <div class="mt-8 border-t border-[var(--wi-border)] pt-8">
+        <div
+          id="prediction-panel-environment"
+          v-show="activeSection === 'environment'"
+          role="tabpanel"
+          aria-labelledby="prediction-tab-environment"
+          class="mt-5"
+        >
           <EnvironmentalInputs @change="updateInputs" />
+          <p class="mt-3 rounded-lg bg-blue-50 p-3 text-xs leading-5 text-blue-900">
+            Missing optional measurements are handled by the model's saved preprocessing. A missing
+            value is not the same as zero.
+          </p>
         </div>
-
-        <!-- Land-cover inputs -->
-        <div class="mt-8 border-t border-[var(--wi-border)] pt-8">
+        <div
+          id="prediction-panel-landcover"
+          v-show="activeSection === 'landcover'"
+          role="tabpanel"
+          aria-labelledby="prediction-tab-landcover"
+          class="mt-5"
+        >
           <LandCoverInputs @change="updateInputs" />
         </div>
 
-        <!-- Prediction input validation -->
-        <div class="mt-8 border-t border-[var(--wi-border)] pt-8">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 class="text-lg font-bold text-[var(--wi-text)]">Input Validation</h3>
-
-              <p class="mt-1 text-sm text-[var(--wi-muted)]">
-                Check the wildfire observation data before prediction.
-              </p>
-            </div>
-
+        <!-- Keep validation/actions visible without a fourth full-size panel -->
+        <div
+          class="sticky bottom-0 z-10 mt-5 rounded-xl border border-[var(--wi-border)] bg-white/95 p-3 shadow-md backdrop-blur-sm sm:p-4"
+        >
+          <div class="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              class="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--wi-teal)] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+              class="rounded-lg border border-teal-200 px-3 py-2.5 text-xs font-semibold text-teal-800 hover:bg-teal-50 sm:text-sm"
               @click="checkPredictionInputs"
             >
-              <i class="pi pi-check-circle" aria-hidden="true"></i>
-
-              Validate Prediction Inputs
+              <i class="pi pi-check-circle mr-1" aria-hidden="true"></i> Validate
             </button>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--wi-teal)] px-4 py-2.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+              :disabled="!validation.valid || isPredicting"
+              @click="submitPrediction"
+            >
+              <i
+                :class="isPredicting ? 'pi pi-spin pi-spinner' : 'pi pi-chart-line'"
+                aria-hidden="true"
+              ></i>
+              {{ isPredicting ? 'Predicting...' : 'Predict Burned Area' }}
+            </button>
+            <span class="text-xs text-[var(--wi-muted)]">{{
+              validation.valid ? 'Ready to predict' : `${errorCount} input checks remaining`
+            }}</span>
           </div>
 
-          <!-- Validation result -->
           <div
             v-if="showValidation"
-            class="mt-5 rounded-xl border p-5"
-            :class="
-              validation.valid ? 'border-teal-200 bg-teal-50' : 'border-orange-200 bg-orange-50'
-            "
             role="status"
+            class="mt-3 rounded-lg px-3 py-2.5 text-xs"
+            :class="validation.valid ? 'bg-teal-50 text-teal-900' : 'bg-orange-50 text-orange-900'"
           >
-            <div class="flex items-start gap-3">
-              <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                :class="
-                  validation.valid ? 'bg-teal-100 text-teal-700' : 'bg-orange-100 text-orange-700'
-                "
-              >
-                <i
-                  :class="validation.valid ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"
-                  aria-hidden="true"
-                ></i>
-              </div>
-
-              <div class="min-w-0 flex-1">
-                <h3
-                  class="font-semibold"
-                  :class="validation.valid ? 'text-teal-900' : 'text-orange-950'"
-                >
-                  {{ validation.valid ? 'Input Validation Passed' : 'Input Validation Failed' }}
-                </h3>
-
-                <p v-if="validation.valid" class="mt-2 text-sm leading-6 text-teal-800">
-                  All required fields and land-cover proportions passed the current structural
-                  validation checks. Backend integration is still pending.
-                </p>
-
-                <div v-else class="mt-3">
-                  <p class="mb-3 text-sm text-orange-900">
-                    Please review the following input requirements:
-                  </p>
-
-                  <ul class="list-disc space-y-1 pl-5 text-sm leading-6 text-orange-900">
-                    <li v-for="error in validation.errors" :key="error">
-                      {{ error }}
-                    </li>
-                  </ul>
-                </div>
-              </div>
+            <div class="flex items-center gap-2 font-semibold">
+              <i
+                :class="validation.valid ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"
+                aria-hidden="true"
+              ></i>
+              {{
+                validation.valid
+                  ? 'Validation passed — ready for prediction'
+                  : `Validation found ${errorCount} issue(s)`
+              }}
             </div>
+            <details v-if="!validation.valid" class="mt-2" open>
+              <summary class="cursor-pointer font-semibold">Show validation requirements</summary>
+              <ul class="mt-2 max-h-32 list-disc space-y-1 overflow-y-auto pl-5">
+                <li v-for="error in validation.errors" :key="error">{{ error }}</li>
+              </ul>
+            </details>
+          </div>
+          <div
+            v-if="predictionError"
+            role="alert"
+            class="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-900"
+          >
+            {{ predictionError }}
           </div>
         </div>
       </div>
@@ -259,25 +347,48 @@ function checkPredictionInputs() {
 
           <h2 class="text-lg font-bold text-[var(--wi-text)]">Prediction Output</h2>
 
-          <p class="mt-3 text-sm leading-6 text-[var(--wi-muted)]">
-            Once the complete input form is connected to the Flask prediction API, the estimated
-            burned area will appear here in hectares.
+          <p class="mt-2 text-xs leading-5 text-[var(--wi-muted)]">
+            Estimates the eventual burned area of an existing wildfire using the Flask API and
+            optimized XGBoost research model.
           </p>
 
-          <!-- Prediction result placeholder -->
-          <div class="mt-5 rounded-xl border border-blue-100 bg-white p-5">
+          <div class="mt-4 rounded-xl border border-blue-100 bg-white p-4" aria-live="polite">
             <p class="text-xs font-medium text-[var(--wi-muted)]">Estimated Burned Area</p>
 
-            <p class="mt-2 text-2xl font-bold text-[var(--wi-text)]">Not calculated</p>
+            <p v-if="prediction" class="mt-2 text-3xl font-extrabold text-[var(--wi-text)]">
+              {{
+                prediction.predicted_burned_area_ha.toLocaleString(undefined, {
+                  maximumFractionDigits: 2,
+                })
+              }}
+              <span class="text-base font-semibold text-[var(--wi-muted)]">ha</span>
+            </p>
+            <p v-else class="mt-2 text-2xl font-bold text-[var(--wi-text)]">
+              {{ isPredicting ? 'Calculating...' : 'Not calculated' }}
+            </p>
 
-            <p class="mt-2 text-xs text-[var(--wi-muted)]">Awaiting validated wildfire inputs</p>
+            <p v-if="prediction" class="mt-2 text-xs text-[var(--wi-muted)]">
+              {{ prediction.model }} · Experimental estimate
+            </p>
+            <p v-else class="mt-2 text-xs text-[var(--wi-muted)]">
+              {{
+                inputsChangedAfterPrediction
+                  ? 'Inputs changed; request a new prediction.'
+                  : 'Awaiting a prediction request.'
+              }}
+            </p>
           </div>
 
-          <!-- Integration status -->
           <div class="mt-4 flex items-center gap-2 text-xs font-medium text-blue-700">
-            <i class="pi pi-info-circle" aria-hidden="true"></i>
-
-            <span> Frontend prediction integration pending </span>
+            <i
+              :class="prediction ? 'pi pi-check-circle' : 'pi pi-info-circle'"
+              aria-hidden="true"
+            ></i>
+            <span>{{
+              prediction
+                ? 'Prediction received from Flask API'
+                : 'Flask model connected for local development'
+            }}</span>
           </div>
         </div>
 
@@ -324,7 +435,7 @@ function checkPredictionInputs() {
             </div>
           </div>
 
-          <div class="mt-5 space-y-3 text-sm text-[var(--wi-muted)]">
+          <div class="mt-3 space-y-2 text-xs text-[var(--wi-muted)]">
             <div class="flex items-center gap-3">
               <i class="pi pi-file-edit text-teal-600" aria-hidden="true"></i>
               <span>Raw wildfire observations</span>

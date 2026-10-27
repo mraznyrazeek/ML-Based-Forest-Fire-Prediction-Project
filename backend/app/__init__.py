@@ -2,6 +2,7 @@
 from flask import Flask, jsonify, request
 from .services.model_service import predict_burned_area
 from .preprocessing.feature_processor import preprocess_features
+from .services.evaluation_service import get_evaluation_record
 
 
 def create_app():
@@ -68,5 +69,23 @@ def create_app():
                 "status": "error",
                 "message": str(error)
             }), 400
+
+    
+    @app.get("/api/evaluation/<int:record_id>")
+    def evaluate_historical_record(record_id):
+        try:
+            result = get_evaluation_record(record_id)
+
+            return jsonify({
+                "status": "success",
+                "evaluation": result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
+
 
     return app

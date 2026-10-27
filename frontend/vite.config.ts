@@ -1,3 +1,4 @@
+
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
@@ -12,9 +13,20 @@ export default defineConfig({
     tailwindcss(),
     vueDevTools(),
   ],
+
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+
+  // Forward frontend API requests to the Flask backend
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
     },
   },
 })
