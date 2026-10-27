@@ -20,6 +20,11 @@ const router = createRouter({
           name: 'prediction',
           component: () => import('@/views/PredictionView.vue'),
         },
+        {
+          path: 'map',
+          name: 'wildfire-map',
+          component: () => import('@/views/WildfireMapView.vue'),
+        },
       ],
     },
   ],
