@@ -268,3 +268,134 @@ def get_model_feature_importance():
         "features": features,
     }
 
+
+@lru_cache(maxsize=1)
+def get_model_scatter_data():
+    """Return held-out actual and predicted burned areas for visualization."""
+    import numpy as np
+
+    X_test, actual_ha, model = load_evaluation_data()
+    predicted_ha = np.expm1(model.predict(X_test))
+
+    if len(actual_ha) != len(predicted_ha):
+        raise ValueError("Actual and predicted observation counts differ.")
+
+    if not np.all(np.isfinite(actual_ha)):
+        raise ValueError("Actual burned areas contain non-finite values.")
+
+    if not np.all(np.isfinite(predicted_ha)):
+        raise ValueError("Predicted burned areas contain non-finite values.")
+
+    observations = [
+        {
+            "record_id": int(index),
+            "actual_ha": round(float(actual), 2),
+            "predicted_ha": round(float(predicted), 2),
+        }
+        for index, (actual, predicted) in enumerate(
+            zip(actual_ha, predicted_ha)
+        )
+    ]
+
+    return {
+        "model": "Optimized XGBoost",
+        "dataset": "Held-out Mesogeos test set",
+        "observation_count": len(observations),
+        "observations": observations,
+    }
+
+
+@lru_cache(maxsize=1)
+def get_model_baseline_comparison():
+    """Compare XGBoost with a training-median baseline on held-out data."""
+    from sklearn.metrics import (
+        mean_absolute_error,
+        mean_squared_error,
+        median_absolute_error,
+        r2_score,
+    )
+
+    y_train_path = PROJECT_ROOT / "dataset/processed/y_train.csv"
+
+    if not y_train_path.is_file():
+        raise FileNotFoundError(
+            f"Missing training targets: {y_train_path}"
+        )
+
+    y_train = pd.read_csv(y_train_path)
+
+    if "log_burned_area" not in y_train.columns:
+        raise ValueError("Missing log_burned_area in training targets.")
+
+    training_log = y_train["log_burned_area"].to_numpy(dtype=float)
+
+    if len(training_log) == 0 or not np.isfinite(training_log).all():
+        raise ValueError("Training targets are empty or contain invalid values.")
+
+    training_actual_ha = np.expm1(training_log)
+
+    if (
+        not np.isfinite(training_actual_ha).all()
+        or np.any(training_actual_ha < 0)
+    ):
+        raise ValueError("Invalid training burned-area values.")
+
+    baseline_ha = float(np.median(training_actual_ha))
+
+    X_test, actual_ha, model = load_evaluation_data()
+
+    baseline_predictions = np.full(
+        len(actual_ha),
+        baseline_ha,
+        dtype=float,
+    )
+
+    xgboost_predictions = np.expm1(model.predict(X_test))
+
+    if (
+        not np.isfinite(xgboost_predictions).all()
+        or np.any(xgboost_predictions < 0)
+    ):
+        raise ValueError("XGBoost returned invalid predictions.")
+
+    def calculate_metrics(predictions):
+        return {
+            "mae_ha": round(
+                float(mean_absolute_error(actual_ha, predictions)), 2
+            ),
+            "rmse_ha": round(
+                float(np.sqrt(mean_squared_error(actual_ha, predictions))), 2
+            ),
+            "median_absolute_error_ha": round(
+                float(median_absolute_error(actual_ha, predictions)), 2
+            ),
+            "r2": round(
+                float(r2_score(actual_ha, predictions)), 4
+            ),
+        }
+
+    baseline_metrics = calculate_metrics(baseline_predictions)
+    xgboost_metrics = calculate_metrics(xgboost_predictions)
+
+    mae_improvement_percent = (
+        (
+            baseline_metrics["mae_ha"] -
+            xgboost_metrics["mae_ha"]
+        ) / baseline_metrics["mae_ha"] * 100
+        if baseline_metrics["mae_ha"] > 0
+        else 0.0
+    )
+
+    return {
+        "model": "Optimized XGBoost",
+        "baseline": "Training median burned area",
+        "training_observations": int(len(training_actual_ha)),
+        "test_observations": int(len(actual_ha)),
+        "baseline_prediction_ha": round(baseline_ha, 2),
+        "baseline_metrics": baseline_metrics,
+        "xgboost_metrics": xgboost_metrics,
+        "mae_improvement_percent": round(
+            float(mae_improvement_percent), 2
+        ),
+    }
+

@@ -8,6 +8,8 @@ from .services.evaluation_service import (
     get_evaluation_record,
     get_model_performance_summary,
     get_model_feature_importance,
+    get_model_scatter_data,
+    get_model_baseline_comparison,
 )
 
 from .services.map_service import get_wildfire_locations
@@ -320,5 +322,29 @@ def create_app():
                 "message": str(error),
             }), 400
 
+    
+    @app.get("/api/model-insights/scatter")
+    def model_insights_scatter():
+        try:
+            result = get_model_scatter_data()
+            return jsonify({"status": "success", **result}), 200
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
 
+
+    @app.get("/api/model-insights/baseline")
+    def model_insights_baseline():
+        try:
+            result = get_model_baseline_comparison()
+            return jsonify({"status": "success", **result}), 200
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
+
+    
     return app

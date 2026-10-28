@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { Bar } from 'vue-chartjs'
+import { Bar, Scatter } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   BarElement,
+  PointElement,
+  LineElement,
   CategoryScale,
   LinearScale,
+  LogarithmicScale,
   Legend,
   Tooltip,
   type ChartData,
@@ -14,12 +17,25 @@ import {
 import {
   getModelPerformance,
   getModelFeatureImportance,
+  getModelScatterData,
+  getModelBaselineComparison,
   type ModelPerformanceResponse,
   type FeatureImportanceResponse,
+  type ModelScatterResponse,
+  type ModelBaselineResponse,
 } from '@/services/modelInsightsService'
 import { useTheme } from '@/composables/useTheme'
 
-ChartJS.register(BarElement, CategoryScale, LinearScale, Legend, Tooltip)
+ChartJS.register(
+  BarElement,
+  PointElement,
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  LogarithmicScale,
+  Legend,
+  Tooltip,
+)
 
 const { theme } = useTheme()
 const performance = ref<ModelPerformanceResponse | null>(null)
@@ -29,6 +45,13 @@ const featureImportance = ref<FeatureImportanceResponse | null>(null)
 const importanceLoading = ref(true)
 const importanceError = ref('')
 const visibleFeatureCount = ref<10 | 15 | 44>(10)
+const baseline = ref<ModelBaselineResponse | null>(null)
+const baselineLoading = ref(true)
+const baselineError = ref('')
+const scatter = ref<ModelScatterResponse | null>(null)
+const scatterLoading = ref(true)
+const scatterError = ref('')
+const scatterScale = ref<'logarithmic' | 'linear'>('logarithmic')
 let mounted = true
 
 const darkMode = computed(() => theme.value === 'dark')
@@ -188,6 +211,203 @@ const featureImportanceOptions = computed<ChartOptions<'bar'>>(() => ({
   },
 }))
 
+// Each point is one held-out observation: x = actual, y = predicted.
+// The dashed y=x line represents perfect prediction, not a fitted trend.
+const scatterData = computed<ChartData<'scatter'>>(() => {
+  const observations = scatter.value?.observations ?? []
+  const values = observations.flatMap((item) => [item.actual_ha, item.predicted_ha])
+  const positive = values.filter((value) => value > 0)
+  const lower = positive.length ? Math.min(...positive) : 1
+  const upper = values.length ? Math.max(...values) : 100
+  return {
+    datasets: [
+      {
+        label: 'Held-out observations',
+        data: observations.map((row) => ({ x: row.actual_ha, y: row.predicted_ha })),
+        backgroundColor: darkMode.value ? 'rgba(45,212,191,0.42)' : 'rgba(0,143,135,0.4)',
+        pointRadius: 2.8,
+        pointHoverRadius: 6,
+      },
+      {
+        label: 'Perfect prediction (y = x)',
+        data: [
+          { x: lower, y: lower },
+          { x: upper, y: upper },
+        ],
+        borderColor: chartColors.value.orange,
+        borderDash: [7, 5],
+        borderWidth: 2,
+        pointRadius: 0,
+        showLine: true,
+      },
+    ],
+  }
+})
+
+const scatterOptions = computed<ChartOptions<'scatter'>>(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  interaction: { mode: 'nearest', intersect: true },
+  plugins: {
+    legend: {
+      display: true,
+      position: 'bottom',
+      labels: { color: chartColors.value.text, usePointStyle: true },
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const point = context.raw as { x: number; y: number }
+          return context.datasetIndex === 1
+            ? `Perfect prediction: ${formatNumber(point.x)} ha`
+            : `Actual: ${formatNumber(point.x)} ha · Predicted: ${formatNumber(point.y)} ha`
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      type: scatterScale.value,
+      grid: { color: chartColors.value.grid },
+      ticks: { color: chartColors.value.muted },
+      title: { display: true, text: 'Actual burned area (ha)', color: chartColors.value.muted },
+    },
+    y: {
+      type: scatterScale.value,
+      grid: { color: chartColors.value.grid },
+      ticks: { color: chartColors.value.muted },
+      title: { display: true, text: 'Predicted burned area (ha)', color: chartColors.value.muted },
+    },
+  },
+}))
+
+const baselineMetricRows = computed(() => {
+  if (!baseline.value) return []
+  const base = baseline.value.baseline_metrics
+  const xgb = baseline.value.xgboost_metrics
+  return [
+    {
+      label: 'Mean absolute error',
+      key: 'mae',
+      baseline: base.mae_ha,
+      xgboost: xgb.mae_ha,
+      unit: 'ha',
+      lowerIsBetter: true,
+    },
+    {
+      label: 'Root mean squared error',
+      key: 'rmse',
+      baseline: base.rmse_ha,
+      xgboost: xgb.rmse_ha,
+      unit: 'ha',
+      lowerIsBetter: true,
+    },
+    {
+      label: 'Median absolute error',
+      key: 'median',
+      baseline: base.median_absolute_error_ha,
+      xgboost: xgb.median_absolute_error_ha,
+      unit: 'ha',
+      lowerIsBetter: true,
+    },
+    {
+      label: 'R² score',
+      key: 'r2',
+      baseline: base.r2,
+      xgboost: xgb.r2,
+      unit: '',
+      lowerIsBetter: false,
+    },
+  ]
+})
+
+const baselineBarData = computed<ChartData<'bar'>>(() => ({
+  labels: ['MAE', 'RMSE', 'Median absolute error'],
+  datasets: [
+    {
+      label: 'Training-median baseline',
+      data: baseline.value
+        ? [
+            baseline.value.baseline_metrics.mae_ha,
+            baseline.value.baseline_metrics.rmse_ha,
+            baseline.value.baseline_metrics.median_absolute_error_ha,
+          ]
+        : [],
+      backgroundColor: chartColors.value.blue,
+      borderRadius: 4,
+    },
+    {
+      label: 'Optimized XGBoost',
+      data: baseline.value
+        ? [
+            baseline.value.xgboost_metrics.mae_ha,
+            baseline.value.xgboost_metrics.rmse_ha,
+            baseline.value.xgboost_metrics.median_absolute_error_ha,
+          ]
+        : [],
+      backgroundColor: chartColors.value.teal,
+      borderRadius: 4,
+    },
+  ],
+}))
+
+const baselineBarOptions = computed<ChartOptions<'bar'>>(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: { color: chartColors.value.text, usePointStyle: true, padding: 16 },
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => `${context.dataset.label}: ${formatNumber(context.parsed.y ?? 0)} ha`,
+      },
+    },
+  },
+  scales: {
+    x: { ticks: { color: chartColors.value.muted }, grid: { display: false } },
+    y: {
+      beginAtZero: true,
+      ticks: { color: chartColors.value.muted },
+      grid: { color: chartColors.value.grid },
+      title: { display: true, text: 'Absolute error (ha)', color: chartColors.value.muted },
+    },
+  },
+}))
+
+async function loadBaseline() {
+  baselineLoading.value = true
+  baselineError.value = ''
+  try {
+    const response = await getModelBaselineComparison()
+    if (mounted) baseline.value = response
+  } catch (cause) {
+    if (mounted)
+      baselineError.value =
+        cause instanceof Error ? cause.message : 'Unable to load baseline comparison.'
+  } finally {
+    if (mounted) baselineLoading.value = false
+  }
+}
+
+async function loadScatter() {
+  scatterLoading.value = true
+  scatterError.value = ''
+  try {
+    const response = await getModelScatterData()
+    if (mounted) scatter.value = response
+  } catch (cause) {
+    if (mounted) {
+      scatterError.value =
+        cause instanceof Error ? cause.message : 'Unable to load scatter observations.'
+    }
+  } finally {
+    if (mounted) scatterLoading.value = false
+  }
+}
+
 async function loadFeatureImportance() {
   importanceLoading.value = true
   importanceError.value = ''
@@ -207,6 +427,8 @@ async function loadFeatureImportance() {
 function refreshInsights() {
   void loadPerformance()
   void loadFeatureImportance()
+  void loadScatter()
+  void loadBaseline()
 }
 
 async function loadPerformance() {
@@ -228,6 +450,8 @@ onMounted(() => {
   mounted = true
   void loadPerformance()
   void loadFeatureImportance()
+  void loadScatter()
+  void loadBaseline()
 })
 onUnmounted(() => {
   mounted = false
@@ -257,11 +481,15 @@ onUnmounted(() => {
         <button
           type="button"
           class="rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-2 text-xs font-semibold text-[var(--wi-text)] hover:opacity-80 disabled:opacity-50"
-          :disabled="loading || importanceLoading"
+          :disabled="loading || importanceLoading || scatterLoading || baselineLoading"
           @click="refreshInsights"
         >
           <i
-            :class="loading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"
+            :class="
+              loading || importanceLoading || scatterLoading || baselineLoading
+                ? 'pi pi-spin pi-spinner'
+                : 'pi pi-refresh'
+            "
             class="mr-1"
             aria-hidden="true"
           ></i>
@@ -416,6 +644,174 @@ onUnmounted(() => {
             />
           </div>
         </article>
+      </section>
+
+      <!-- Baseline is fitted on training targets only, then evaluated on the same held-out test set. -->
+      <section
+        class="rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] p-4"
+        aria-label="Baseline versus XGBoost model comparison"
+      >
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--wi-teal)]">
+            Model benchmarking · held-out test set
+          </p>
+          <h2 class="mt-1 text-sm font-bold text-[var(--wi-text)]">
+            Baseline vs Optimized XGBoost
+          </h2>
+          <p class="mt-1 text-xs leading-5 text-[var(--wi-muted)]">
+            The baseline always predicts the median burned area from training data only. Both
+            methods are evaluated on the same held-out records.
+          </p>
+        </div>
+
+        <div v-if="baselineLoading" role="status" class="mt-4 text-sm text-[var(--wi-muted)]">
+          <i class="pi pi-spin pi-spinner mr-2" aria-hidden="true"></i>Loading baseline
+          comparison...
+        </div>
+        <div v-else-if="baselineError" role="alert" class="mt-4 text-sm text-red-500">
+          {{ baselineError }}
+          <button type="button" class="ml-2 underline" @click="loadBaseline">Retry</button>
+        </div>
+        <template v-else-if="baseline">
+          <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div class="rounded-xl bg-[var(--wi-surface-alt)] p-3">
+              <p class="text-xs text-[var(--wi-muted)]">Training-median prediction</p>
+              <strong class="mt-1 block text-lg text-[var(--wi-text)]"
+                >{{ formatNumber(baseline.baseline_prediction_ha) }} ha</strong
+              >
+            </div>
+            <div class="rounded-xl bg-[var(--wi-surface-alt)] p-3">
+              <p class="text-xs text-[var(--wi-muted)]">XGBoost MAE improvement</p>
+              <strong
+                class="mt-1 block text-lg"
+                :class="
+                  baseline.mae_improvement_percent >= 0
+                    ? 'text-[var(--wi-teal)]'
+                    : 'text-[var(--wi-orange)]'
+                "
+              >
+                {{ formatNumber(baseline.mae_improvement_percent) }}%
+              </strong>
+            </div>
+            <div class="rounded-xl bg-[var(--wi-surface-alt)] p-3">
+              <p class="text-xs text-[var(--wi-muted)]">Evaluation observations</p>
+              <strong class="mt-1 block text-lg text-[var(--wi-text)]">{{
+                formatNumber(baseline.test_observations, 0)
+              }}</strong>
+              <p class="mt-1 text-[11px] text-[var(--wi-muted)]">
+                {{ formatNumber(baseline.training_observations, 0) }} training records
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-4 h-[310px]">
+            <Bar :key="`baseline-${theme}`" :data="baselineBarData" :options="baselineBarOptions" />
+          </div>
+
+          <div class="mt-4 overflow-x-auto rounded-lg border border-[var(--wi-border)]">
+            <table class="w-full min-w-[580px] text-left text-xs">
+              <thead class="bg-[var(--wi-surface-alt)] text-[var(--wi-muted)]">
+                <tr>
+                  <th scope="col" class="px-3 py-2">Evaluation metric</th>
+                  <th scope="col" class="px-3 py-2 text-right">Training-median baseline</th>
+                  <th scope="col" class="px-3 py-2 text-right">Optimized XGBoost</th>
+                  <th scope="col" class="px-3 py-2 text-right">Better</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[var(--wi-border)] text-[var(--wi-text)]">
+                <tr v-for="row in baselineMetricRows" :key="row.key">
+                  <td class="px-3 py-2 font-semibold">{{ row.label }}</td>
+                  <td class="px-3 py-2 text-right">
+                    {{ formatNumber(row.baseline, row.key === 'r2' ? 4 : 2) }} {{ row.unit }}
+                  </td>
+                  <td class="px-3 py-2 text-right">
+                    {{ formatNumber(row.xgboost, row.key === 'r2' ? 4 : 2) }} {{ row.unit }}
+                  </td>
+                  <td class="px-3 py-2 text-right font-semibold">
+                    {{
+                      row.baseline === row.xgboost
+                        ? 'Tie'
+                        : (
+                              row.lowerIsBetter
+                                ? row.xgboost < row.baseline
+                                : row.xgboost > row.baseline
+                            )
+                          ? 'XGBoost'
+                          : 'Baseline'
+                    }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-3 text-xs leading-5 text-[var(--wi-muted)]">
+            XGBoost reduces mean error compared with this simple baseline but has worse median
+            absolute error. Its held-out R² remains low, and large fires are substantially
+            underestimated. This comparison does not establish operational reliability.
+          </p>
+        </template>
+      </section>
+
+      <!-- Unlike grouped medians, this plot shows all paired test-set predictions. -->
+      <section
+        class="rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] p-4"
+        aria-label="Individual observed versus predicted wildfire areas"
+      >
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--wi-teal)]">
+              Held-out model diagnostics · individual records
+            </p>
+            <h2 class="mt-1 text-sm font-bold text-[var(--wi-text)]">
+              Actual vs Predicted — Scatter Plot
+            </h2>
+            <p class="mt-1 text-xs text-[var(--wi-muted)]">
+              Each dot represents one wildfire observation; dashed line = perfect prediction
+            </p>
+          </div>
+          <div class="w-full sm:w-44">
+            <label
+              for="scatter-scale"
+              class="mb-1 block text-xs font-semibold text-[var(--wi-muted)]"
+            >
+              Axis scale
+            </label>
+            <select
+              id="scatter-scale"
+              v-model="scatterScale"
+              class="w-full rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-2 text-sm text-[var(--wi-text)]"
+            >
+              <option value="logarithmic">Logarithmic</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+        </div>
+        <div v-if="scatterLoading" role="status" class="mt-4 text-sm text-[var(--wi-muted)]">
+          <i class="pi pi-spin pi-spinner mr-2" aria-hidden="true"></i>Loading paired
+          observations...
+        </div>
+        <div v-else-if="scatterError" role="alert" class="mt-4 text-sm text-red-500">
+          {{ scatterError }}
+          <button type="button" class="ml-2 underline" @click="loadScatter">Retry</button>
+        </div>
+        <template v-else-if="scatter">
+          <p class="mt-3 text-xs text-[var(--wi-muted)]">
+            {{ formatNumber(scatter.observation_count, 0) }} held-out observations
+          </p>
+          <div class="mt-4 h-[420px]">
+            <Scatter
+              :key="`scatter-${theme}-${scatterScale}`"
+              :data="scatterData"
+              :options="scatterOptions"
+            />
+          </div>
+          <p class="mt-3 text-xs leading-5 text-[var(--wi-muted)]">
+            Points below the dashed line are underpredictions; points above are overpredictions. The
+            logarithmic scale displays a broad range of positive fire sizes; switching to linear
+            makes the extreme-fire errors more prominent. The graph is a diagnostic of held-out
+            data, not proof of operational reliability.
+          </p>
+        </template>
       </section>
 
       <section class="rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] p-4">
