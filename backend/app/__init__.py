@@ -4,6 +4,7 @@ from .services.model_service import predict_burned_area
 from .preprocessing.feature_processor import preprocess_features
 from .services.evaluation_service import get_evaluation_record
 from .services.map_service import get_wildfire_locations
+from .services.history_service import get_historical_wildfires
 
 
 def create_app():
@@ -129,6 +130,56 @@ def create_app():
                 "message": str(error),
             }), 400
 
+
+    @app.get("/api/wildfires/history")
+    def wildfire_history():
+        try:
+            page = int(request.args.get("page", "1"))
+            page_size = int(request.args.get("page_size", "25"))
+
+            year_value = request.args.get("year")
+            year = None
+
+            if year_value is not None:
+                year = int(year_value)
+
+                if year < 1900 or year > 2100:
+                    raise ValueError(
+                        "Year must be between 1900 and 2100."
+                    )
+
+            country = request.args.get("country")
+
+            min_area_value = request.args.get("min_area")
+            min_area = (
+                float(min_area_value)
+                if min_area_value is not None
+                else None
+            )
+
+            sort_by = request.args.get("sort_by", "date")
+            sort_order = request.args.get("sort_order", "desc")
+
+            result = get_historical_wildfires(
+                page=page,
+                page_size=page_size,
+                year=year,
+                country=country,
+                min_area=min_area,
+                sort_by=sort_by,
+                sort_order=sort_order,
+            )
+
+            return jsonify({
+                "status": "success",
+                **result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
 
 
     return app
