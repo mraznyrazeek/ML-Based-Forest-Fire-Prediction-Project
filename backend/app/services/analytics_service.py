@@ -230,3 +230,96 @@ def get_monthly_wildfire_seasonality():
     }
 
 
+LAND_COVER_LABELS = {
+    "lc_agriculture": "Agriculture",
+    "lc_forest": "Forest",
+    "lc_grassland": "Grassland",
+    "lc_settlement": "Settlement",
+    "lc_shrubland": "Shrubland",
+    "lc_sparse_vegetation": "Sparse vegetation",
+    "lc_water_bodies": "Water bodies",
+    "lc_wetland": "Wetland",
+}
+
+
+def get_land_cover_analytics():
+    """Summarize wildfires by their dominant land-cover fraction."""
+
+    data = load_analytics_dataset().copy()
+    columns = list(LAND_COVER_LABELS)
+
+    landcover = data[columns].apply(
+        pd.to_numeric, errors="coerce"
+    )
+
+    # A record must have a valid normalized land-cover composition.
+    valid = (
+        landcover.notna().all(axis=1)
+        & np.isfinite(landcover).all(axis=1)
+        & landcover.ge(0).all(axis=1)
+        & landcover.le(1).all(axis=1)
+        & np.isclose(landcover.sum(axis=1), 1, atol=0.01)
+    )
+
+    valid_data = data.loc[valid].copy()
+    valid_landcover = landcover.loc[valid]
+
+    maxima = valid_landcover.max(axis=1)
+
+    ties = valid_landcover.eq(maxima, axis=0).sum(axis=1) > 1
+
+    dominant = valid_landcover.idxmax(axis=1)
+    dominant.loc[ties] = "tie"
+
+    valid_data["dominant_landcover"] = dominant
+
+    summary = (
+        valid_data.groupby("dominant_landcover")
+        .agg(
+            observation_count=("burned_area_ha", "size"),
+            total_burned_area_ha=("burned_area_ha", "sum"),
+            mean_burned_area_ha=("burned_area_ha", "mean"),
+            median_burned_area_ha=("burned_area_ha", "median"),
+            largest_fire_ha=("burned_area_ha", "max"),
+        )
+        .reset_index()
+        .sort_values("observation_count", ascending=False)
+    )
+
+    records = []
+
+    for row in summary.itertuples(index=False):
+        category = row.dominant_landcover
+
+        records.append({
+            "category": category,
+            "label": (
+                "Tied dominant categories"
+                if category == "tie"
+                else LAND_COVER_LABELS[category]
+            ),
+            "observation_count": int(row.observation_count),
+            "total_burned_area_ha": round(
+                float(row.total_burned_area_ha), 2
+            ),
+            "mean_burned_area_ha": round(
+                float(row.mean_burned_area_ha), 2
+            ),
+            "median_burned_area_ha": round(
+                float(row.median_burned_area_ha), 2
+            ),
+            "largest_fire_ha": round(
+                float(row.largest_fire_ha), 2
+            ),
+        })
+
+    return {
+        "dataset": "Mesogeos historical wildfire observations",
+        "total_observations": int(len(data)),
+        "classified_observations": int(len(valid_data)),
+        "excluded_observations": int((~valid).sum()),
+        "tied_observations": int(ties.sum()),
+        "classification_method": "Largest land-cover fraction",
+        "land_cover_summary": records,
+    }
+

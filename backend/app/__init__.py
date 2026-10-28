@@ -1,3 +1,4 @@
+from .services.distribution_service import get_burned_area_distribution
 
 from flask import Flask, jsonify, request
 from .services.model_service import predict_burned_area
@@ -12,6 +13,7 @@ from .services.analytics_service import (
     get_annual_wildfire_trends,
     get_environmental_relationships,
     get_monthly_wildfire_seasonality,
+    get_land_cover_analytics,
 )
 
 def create_app():
@@ -256,5 +258,26 @@ def create_app():
                 "message": str(error),
             }), 400
 
+
+    @app.get("/api/analytics/land-cover")
+    def land_cover_analytics():
+        try:
+            result = get_land_cover_analytics()
+
+            return jsonify({
+                "status": "success",
+                **result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
+
+    @app.get("/api/analytics/burned-area-distribution")
+    def burned_area_distribution_analytics():
+        result = get_burned_area_distribution()
+        return jsonify({"status": "success", **result}), 200
 
     return app
