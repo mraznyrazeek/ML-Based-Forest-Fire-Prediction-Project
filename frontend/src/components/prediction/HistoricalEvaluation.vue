@@ -89,18 +89,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-5">
+  <section class="space-y-5 text-[var(--wi-text)]">
     <!-- Heading -->
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 class="text-xl font-bold text-[var(--wi-text)]">Historical Wildfire Evaluation</h2>
+
         <p class="mt-1 text-sm text-[var(--wi-muted)]">
           Compare actual and predicted burned area using held-out Mesogeos records.
         </p>
       </div>
 
       <span
-        class="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700"
+        class="rounded-full border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-1 text-xs font-semibold text-[var(--wi-orange)]"
       >
         <i class="pi pi-chart-bar mr-1" aria-hidden="true"></i>
         Research Evaluation
@@ -108,7 +109,7 @@ onMounted(() => {
     </div>
 
     <!-- Record selection -->
-    <div class="rounded-xl border border-[var(--wi-border)] bg-slate-50 p-4">
+    <div class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-4">
       <label for="historical-record-id" class="text-sm font-semibold text-[var(--wi-text)]">
         Historical Record ID
       </label>
@@ -116,8 +117,9 @@ onMounted(() => {
       <div class="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
-          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium disabled:opacity-40"
+          class="rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface)] px-3 py-2 text-sm font-medium text-[var(--wi-text)] transition-colors hover:bg-[var(--wi-surface-alt)] disabled:cursor-not-allowed disabled:opacity-40"
           :disabled="loading || recordId === null || recordId <= 0"
+          aria-label="Previous historical record"
           @click="changeRecord((recordId ?? 0) - 1)"
         >
           <i class="pi pi-chevron-left" aria-hidden="true"></i>
@@ -130,14 +132,15 @@ onMounted(() => {
           min="0"
           :max="totalRecords - 1"
           step="1"
-          class="w-28 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500"
+          class="w-28 rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface)] px-3 py-2 text-sm text-[var(--wi-text)] outline-none transition-colors focus:border-[var(--wi-teal)]"
           @change="loadRecord"
         />
 
         <button
           type="button"
-          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium disabled:opacity-40"
+          class="rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface)] px-3 py-2 text-sm font-medium text-[var(--wi-text)] transition-colors hover:bg-[var(--wi-surface-alt)] disabled:cursor-not-allowed disabled:opacity-40"
           :disabled="loading || recordId === null || recordId >= totalRecords - 1"
+          aria-label="Next historical record"
           @click="changeRecord((recordId ?? 0) + 1)"
         >
           <i class="pi pi-chevron-right" aria-hidden="true"></i>
@@ -149,18 +152,20 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Loading state -->
     <div
       v-if="loading"
-      class="rounded-xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-800"
+      class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-5 text-sm text-[var(--wi-blue)]"
       role="status"
     >
       <i class="pi pi-spin pi-spinner mr-2" aria-hidden="true"></i>
       Loading historical evaluation...
     </div>
 
+    <!-- Error state -->
     <div
       v-if="error"
-      class="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900"
+      class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-4 text-sm text-[var(--wi-orange)]"
       role="alert"
     >
       <i class="pi pi-exclamation-circle mr-2" aria-hidden="true"></i>
@@ -168,33 +173,45 @@ onMounted(() => {
     </div>
 
     <template v-if="evaluation && !loading">
-      <!-- Actual and predicted -->
+      <!-- Actual and predicted burned area -->
       <div class="grid gap-4 sm:grid-cols-2">
-        <div class="rounded-xl border border-orange-200 bg-orange-50/60 p-5">
-          <p class="text-xs font-semibold uppercase tracking-wider text-orange-700">
+        <div
+          class="relative overflow-hidden rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-5"
+        >
+          <div class="absolute inset-y-0 left-0 w-1 bg-[var(--wi-orange)]"></div>
+
+          <p class="text-xs font-semibold uppercase tracking-wider text-[var(--wi-orange)]">
             Actual Burned Area
           </p>
-          <p class="mt-3 text-3xl font-bold text-orange-950">
+
+          <p class="mt-3 text-3xl font-bold text-[var(--wi-text)]">
             {{ formatArea(evaluation.actual_burned_area_ha) }}
-            <span class="text-base font-medium">ha</span>
+            <span class="text-base font-medium text-[var(--wi-muted)]"> ha </span>
           </p>
-          <p class="mt-2 text-xs text-orange-800">Recorded historical observation</p>
+
+          <p class="mt-2 text-xs text-[var(--wi-muted)]">Recorded historical observation</p>
         </div>
 
-        <div class="rounded-xl border border-teal-200 bg-teal-50/60 p-5">
-          <p class="text-xs font-semibold uppercase tracking-wider text-teal-700">
+        <div
+          class="relative overflow-hidden rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-5"
+        >
+          <div class="absolute inset-y-0 left-0 w-1 bg-[var(--wi-teal)]"></div>
+
+          <p class="text-xs font-semibold uppercase tracking-wider text-[var(--wi-teal)]">
             XGBoost Prediction
           </p>
-          <p class="mt-3 text-3xl font-bold text-teal-950">
+
+          <p class="mt-3 text-3xl font-bold text-[var(--wi-text)]">
             {{ formatArea(evaluation.predicted_burned_area_ha) }}
-            <span class="text-base font-medium">ha</span>
+            <span class="text-base font-medium text-[var(--wi-muted)]"> ha </span>
           </p>
-          <p class="mt-2 text-xs text-teal-800">Optimized research model</p>
+
+          <p class="mt-2 text-xs text-[var(--wi-muted)]">Optimized research model</p>
         </div>
       </div>
 
       <!-- Scientific comparison bars -->
-      <div class="rounded-xl border border-[var(--wi-border)] bg-white p-5">
+      <div class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface)] p-5">
         <h3 class="font-bold text-[var(--wi-text)]">Actual vs Predicted</h3>
 
         <p class="mt-1 text-xs text-[var(--wi-muted)]">
@@ -202,27 +219,37 @@ onMounted(() => {
         </p>
 
         <div class="mt-5 space-y-4">
+          <!-- Actual -->
           <div>
-            <div class="mb-2 flex justify-between text-xs">
-              <span class="font-semibold text-orange-800">Actual</span>
-              <span>{{ formatArea(evaluation.actual_burned_area_ha) }} ha</span>
+            <div class="mb-2 flex justify-between gap-3 text-xs">
+              <span class="font-semibold text-[var(--wi-orange)]"> Actual </span>
+
+              <span class="text-[var(--wi-text)]">
+                {{ formatArea(evaluation.actual_burned_area_ha) }} ha
+              </span>
             </div>
-            <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+
+            <div class="h-3 overflow-hidden rounded-full bg-[var(--wi-surface-alt)]">
               <div
-                class="h-full rounded-full bg-orange-500 transition-all duration-300"
+                class="h-full rounded-full bg-[var(--wi-orange)] transition-all duration-300"
                 :style="{ width: `${actualWidth}%` }"
               ></div>
             </div>
           </div>
 
+          <!-- Predicted -->
           <div>
-            <div class="mb-2 flex justify-between text-xs">
-              <span class="font-semibold text-teal-800">Predicted</span>
-              <span>{{ formatArea(evaluation.predicted_burned_area_ha) }} ha</span>
+            <div class="mb-2 flex justify-between gap-3 text-xs">
+              <span class="font-semibold text-[var(--wi-teal)]"> Predicted </span>
+
+              <span class="text-[var(--wi-text)]">
+                {{ formatArea(evaluation.predicted_burned_area_ha) }} ha
+              </span>
             </div>
-            <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+
+            <div class="h-3 overflow-hidden rounded-full bg-[var(--wi-surface-alt)]">
               <div
-                class="h-full rounded-full bg-teal-600 transition-all duration-300"
+                class="h-full rounded-full bg-[var(--wi-teal)] transition-all duration-300"
                 :style="{ width: `${predictedWidth}%` }"
               ></div>
             </div>
@@ -232,16 +259,18 @@ onMounted(() => {
 
       <!-- Error metrics -->
       <div class="grid gap-3 sm:grid-cols-2">
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p class="text-xs text-slate-500">Absolute Error</p>
-          <p class="mt-2 text-xl font-bold text-slate-900">
+        <div class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-4">
+          <p class="text-xs text-[var(--wi-muted)]">Absolute Error</p>
+
+          <p class="mt-2 text-xl font-bold text-[var(--wi-text)]">
             {{ formatArea(evaluation.absolute_error_ha) }} ha
           </p>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p class="text-xs text-slate-500">Absolute Percentage Error</p>
-          <p class="mt-2 text-xl font-bold text-slate-900">
+        <div class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-4">
+          <p class="text-xs text-[var(--wi-muted)]">Absolute Percentage Error</p>
+
+          <p class="mt-2 text-xl font-bold text-[var(--wi-text)]">
             {{
               evaluation.absolute_percentage_error === null
                 ? 'N/A'
@@ -251,35 +280,48 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Record context -->
-      <div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
-        <h3 class="text-sm font-bold text-blue-950">Historical Record Details</h3>
+      <!-- Historical record context -->
+      <div class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-4">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-info-circle text-[var(--wi-blue)]" aria-hidden="true"></i>
+
+          <h3 class="text-sm font-bold text-[var(--wi-text)]">Historical Record Details</h3>
+        </div>
 
         <div class="mt-3 grid gap-3 text-xs sm:grid-cols-3">
           <div>
-            <span class="text-blue-700">Location</span>
-            <p class="mt-1 font-semibold text-blue-950">
+            <span class="text-[var(--wi-muted)]"> Location </span>
+
+            <p class="mt-1 font-semibold text-[var(--wi-text)]">
               {{ evaluation.features.latitude.toFixed(4) }},
               {{ evaluation.features.longitude.toFixed(4) }}
             </p>
           </div>
 
           <div>
-            <span class="text-blue-700">Observation Period</span>
-            <p class="mt-1 font-semibold text-blue-950">
-              {{ evaluation.features.year }} / {{ evaluation.features.month }}
+            <span class="text-[var(--wi-muted)]"> Observation Period </span>
+
+            <p class="mt-1 font-semibold text-[var(--wi-text)]">
+              {{ evaluation.features.year }} /
+              {{ evaluation.features.month }}
             </p>
           </div>
 
           <div>
-            <span class="text-blue-700">Temperature</span>
-            <p class="mt-1 font-semibold text-blue-950">
-              {{ evaluation.features.temperature_c.toFixed(2) }} °C
+            <span class="text-[var(--wi-muted)]"> Temperature </span>
+
+            <p class="mt-1 font-semibold text-[var(--wi-text)]">
+              {{
+                evaluation.features.temperature_c == null
+                  ? 'Unavailable'
+                  : `${evaluation.features.temperature_c.toFixed(2)} °C`
+              }}
             </p>
           </div>
         </div>
       </div>
 
+      <!-- Scientific disclaimer -->
       <p class="text-xs leading-5 text-[var(--wi-muted)]">
         Source: {{ evaluation.dataset }}. These are held-out evaluation records, not new wildfire
         forecasts. Performance varies across events, and large wildfires may be substantially

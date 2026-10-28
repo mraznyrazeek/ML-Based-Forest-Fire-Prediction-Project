@@ -91,19 +91,17 @@ function popup(record: WildfireMapRecord): HTMLElement {
   root.className = 'wi-fire-popup'
   root.style.minWidth = '220px'
   const heading = document.createElement('div')
-  heading.style.cssText = 'font-weight:800;font-size:14px;color:#0f253a;margin-bottom:8px'
+  heading.className = 'wi-fire-popup-title'
   heading.textContent = `Historical Wildfire #${record.record_id}`
   root.appendChild(heading)
 
   const area = document.createElement('div')
-  area.style.cssText =
-    'padding:10px 12px;background:#fff7ed;border-radius:10px;border:1px solid #fed7aa;margin-bottom:10px'
+  area.className = 'wi-fire-popup-area'
   const areaCaption = document.createElement('div')
-  areaCaption.style.cssText =
-    'font-size:10px;font-weight:700;letter-spacing:.08em;color:#9a3412;text-transform:uppercase'
+  areaCaption.className = 'wi-fire-popup-caption'
   areaCaption.textContent = `Recorded burned area · ${classLabel(record.burned_area_ha)}`
   const areaNumber = document.createElement('div')
-  areaNumber.style.cssText = 'font-weight:800;font-size:20px;color:#7c2d12;margin-top:3px'
+  areaNumber.className = 'wi-fire-popup-number'
   areaNumber.textContent = `${number(record.burned_area_ha)} ha`
   area.append(areaCaption, areaNumber)
   root.appendChild(area)
@@ -125,13 +123,12 @@ function popup(record: WildfireMapRecord): HTMLElement {
   ]
   for (const [label, value] of details) {
     const line = document.createElement('div')
-    line.style.cssText =
-      'display:flex;justify-content:space-between;gap:14px;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:12px'
+    line.className = 'wi-fire-popup-line'
     const key = document.createElement('span')
-    key.style.color = '#64748b'
+    key.className = 'wi-fire-popup-key'
     key.textContent = label ?? ''
     const val = document.createElement('strong')
-    val.style.cssText = 'color:#0f253a;text-align:right'
+    val.className = 'wi-fire-popup-value'
     val.textContent = value ?? ''
     line.append(key, val)
     root.appendChild(line)
@@ -237,19 +234,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div class="wi-observatory space-y-3">
     <!-- Compact laboratory-style title -->
     <header
-      class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--wi-border)] bg-white px-5 py-4 shadow-sm"
+      class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] px-5 py-4 shadow-sm"
     >
       <div class="flex items-center gap-3">
         <div
-          class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600"
+          class="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)] text-[var(--wi-orange)]"
         >
           <i class="pi pi-map text-lg" aria-hidden="true"></i>
         </div>
         <div>
-          <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-600">
+          <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--wi-orange)]">
             Geospatial research · Mesogeos
           </p>
           <h1 class="text-xl font-extrabold tracking-tight text-[var(--wi-text)]">
@@ -258,11 +255,12 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="flex items-center gap-2 text-xs">
-        <span class="rounded-full bg-teal-50 px-3 py-1.5 font-semibold text-teal-800"
+        <span
+          class="rounded-full bg-[var(--wi-surface-alt)] px-3 py-1.5 font-semibold text-[var(--wi-teal)]"
           >Historical observations</span
         >
         <span
-          class="hidden rounded-full border border-slate-200 px-3 py-1.5 text-slate-600 sm:inline-flex"
+          class="hidden rounded-full border border-[var(--wi-border)] px-3 py-1.5 text-[var(--wi-muted)] sm:inline-flex"
           >Mediterranean region</span
         >
       </div>
@@ -270,56 +268,66 @@ onBeforeUnmount(() => {
 
     <!-- Compact KPIs, explicitly scoped to the returned sample -->
     <section class="grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label="Wildfire map indicators">
-      <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+      <div
+        class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface)] px-4 py-3 shadow-sm"
+      >
+        <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--wi-muted)]">
           Displayed observations
         </p>
         <div class="mt-1 flex items-baseline gap-1.5">
-          <strong class="text-2xl text-slate-900">{{ number(displayCount) }}</strong
-          ><span class="text-xs text-slate-400">/ {{ number(matchingCount) }}</span>
+          <strong class="text-2xl text-[var(--wi-text)]">{{ number(displayCount) }}</strong
+          ><span class="text-xs text-[var(--wi-muted)]">/ {{ number(matchingCount) }}</span>
         </div>
       </div>
-      <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+      <div
+        class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface)] px-4 py-3 shadow-sm"
+      >
+        <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--wi-muted)]">
           Largest displayed fire
         </p>
         <div class="mt-1 flex items-baseline gap-1">
-          <strong class="text-2xl text-orange-600">{{ number(largestArea) }}</strong
-          ><span class="text-xs text-slate-500">ha</span>
+          <strong class="text-2xl text-[var(--wi-orange)]">{{ number(largestArea) }}</strong
+          ><span class="text-xs text-[var(--wi-muted)]">ha</span>
         </div>
       </div>
-      <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+      <div
+        class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface)] px-4 py-3 shadow-sm"
+      >
+        <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--wi-muted)]">
           Mean displayed area
         </p>
         <div class="mt-1 flex items-baseline gap-1">
-          <strong class="text-2xl text-teal-700">{{ number(meanArea) }}</strong
-          ><span class="text-xs text-slate-500">ha</span>
+          <strong class="text-2xl text-[var(--wi-teal)]">{{ number(meanArea) }}</strong
+          ><span class="text-xs text-[var(--wi-muted)]">ha</span>
         </div>
       </div>
-      <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+      <div
+        class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface)] px-4 py-3 shadow-sm"
+      >
+        <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--wi-muted)]">
           Large fires · ≥ 500 ha
         </p>
         <div class="mt-1 flex items-baseline gap-1.5">
-          <strong class="text-2xl text-red-700">{{ number(largeCount) }}</strong
-          ><span class="text-xs text-slate-400">displayed</span>
+          <strong class="text-2xl text-red-500">{{ number(largeCount) }}</strong
+          ><span class="text-xs text-[var(--wi-muted)]">displayed</span>
         </div>
       </div>
     </section>
 
     <!-- Filter bar -->
     <section
-      class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+      class="rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] px-4 py-3 shadow-sm"
       aria-label="Map filters"
     >
       <div class="grid grid-cols-2 items-end gap-3 lg:grid-cols-[1fr_1.3fr_1.2fr_1fr_auto_auto]">
         <div class="space-y-1">
-          <label for="fire-year" class="block text-xs font-semibold text-slate-600">Year</label>
+          <label for="fire-year" class="block text-xs font-semibold text-[var(--wi-muted)]"
+            >Year</label
+          >
           <select
             id="fire-year"
             v-model="year"
-            class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
+            class="w-full rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-2 text-sm text-[var(--wi-text)] focus:border-[var(--wi-teal)] focus:outline-none"
           >
             <option value="">All years</option>
             <option v-for="value in yearOptions" :key="value" :value="String(value)">
@@ -328,26 +336,26 @@ onBeforeUnmount(() => {
           </select>
         </div>
         <div class="space-y-1">
-          <label for="fire-country" class="block text-xs font-semibold text-slate-600"
+          <label for="fire-country" class="block text-xs font-semibold text-[var(--wi-muted)]"
             >Country</label
           >
           <select
             id="fire-country"
             v-model="country"
-            class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
+            class="w-full rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-2 text-sm text-[var(--wi-text)] focus:border-[var(--wi-teal)] focus:outline-none"
           >
             <option value="">All countries</option>
             <option v-for="value in countryOptions" :key="value" :value="value">{{ value }}</option>
           </select>
         </div>
         <div class="space-y-1">
-          <label for="fire-area" class="block text-xs font-semibold text-slate-600"
+          <label for="fire-area" class="block text-xs font-semibold text-[var(--wi-muted)]"
             >Minimum burned area</label
           >
           <select
             id="fire-area"
             v-model="minArea"
-            class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
+            class="w-full rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-2 text-sm text-[var(--wi-text)] focus:border-[var(--wi-teal)] focus:outline-none"
           >
             <option value="0">Any size</option>
             <option value="100">100+ ha</option>
@@ -357,13 +365,13 @@ onBeforeUnmount(() => {
           </select>
         </div>
         <div class="space-y-1">
-          <label for="fire-limit" class="block text-xs font-semibold text-slate-600"
+          <label for="fire-limit" class="block text-xs font-semibold text-[var(--wi-muted)]"
             >Display limit</label
           >
           <select
             id="fire-limit"
             v-model="limit"
-            class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
+            class="w-full rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-2 text-sm text-[var(--wi-text)] focus:border-[var(--wi-teal)] focus:outline-none"
           >
             <option value="250">250</option>
             <option value="500">500</option>
@@ -374,7 +382,7 @@ onBeforeUnmount(() => {
         <button
           type="button"
           :disabled="loading"
-          class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-50"
+          class="rounded-lg bg-[var(--wi-teal)] px-4 py-2 text-sm font-semibold text-[#071827] hover:opacity-90 disabled:opacity-50"
           @click="applyFilters"
         >
           <i class="pi pi-filter mr-1" aria-hidden="true"></i>Apply
@@ -382,44 +390,47 @@ onBeforeUnmount(() => {
         <button
           type="button"
           :disabled="loading || !hasFilter"
-          class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          class="rounded-lg border border-[var(--wi-border)] px-4 py-2 text-sm font-semibold text-[var(--wi-muted)] hover:bg-[var(--wi-surface-alt)] disabled:opacity-40"
           @click="resetFilters"
         >
           Reset
         </button>
       </div>
-      <p v-if="applied" class="mt-2 text-[11px] text-slate-500">
+      <p v-if="applied" class="mt-2 text-[11px] text-[var(--wi-muted)]">
         Showing the latest {{ number(displayCount) }} of {{ number(matchingCount) }} matching
         records. Summary metrics describe displayed observations only.
       </p>
     </section>
 
     <!-- Map: visual priority -->
-    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section
+      class="overflow-hidden rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] shadow-sm"
+    >
       <div
-        class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5"
+        class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--wi-border)] px-4 py-2.5"
       >
         <div>
-          <h2 class="text-sm font-bold text-slate-900">Mediterranean Wildfire Geography</h2>
-          <p class="text-[11px] text-slate-500">
+          <h2 class="text-sm font-bold text-[var(--wi-text)]">Mediterranean Wildfire Geography</h2>
+          <p class="text-[11px] text-[var(--wi-muted)]">
             Recorded burned area · select a marker for details
           </p>
         </div>
-        <span class="rounded-full bg-orange-50 px-3 py-1 text-[11px] font-bold text-orange-700"
+        <span
+          class="rounded-full bg-[var(--wi-surface-alt)] px-3 py-1 text-[11px] font-bold text-[var(--wi-orange)]"
           >{{ number(recordYears) }} year{{ recordYears === 1 ? '' : 's' }} in display</span
         >
       </div>
       <div
         v-if="loading"
         role="status"
-        class="border-b border-blue-100 bg-blue-50 px-4 py-2 text-xs text-blue-800"
+        class="border-b border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-4 py-2 text-xs text-[var(--wi-blue)]"
       >
         <i class="pi pi-spin pi-spinner mr-2"></i>Loading historical wildfire observations...
       </div>
       <div
         v-if="error"
         role="alert"
-        class="border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-800"
+        class="border-b border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-4 py-2 text-xs text-red-500"
       >
         {{ error }}
       </div>
@@ -429,15 +440,15 @@ onBeforeUnmount(() => {
         aria-label="Interactive map of historical wildfire observations"
       ></div>
       <div
-        class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-2.5 text-[11px] text-slate-600"
+        class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--wi-border)] px-4 py-2.5 text-[11px] text-[var(--wi-muted)]"
       >
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span class="font-semibold text-slate-800">Burned area</span>
+          <span class="font-semibold text-[var(--wi-text)]">Burned area</span>
           <span class="flex items-center gap-1.5"
             ><i class="h-2.5 w-2.5 rounded-full bg-amber-500"></i>Under 100 ha</span
           >
           <span class="flex items-center gap-1.5"
-            ><i class="h-2.5 w-2.5 rounded-full bg-orange-500"></i>100–499 ha</span
+            ><i class="h-2.5 w-2.5 rounded-full bg-[var(--wi-surface-alt)]0"></i>100–499 ha</span
           >
           <span class="flex items-center gap-1.5"
             ><i class="h-2.5 w-2.5 rounded-full bg-orange-600"></i>500–1,999 ha</span
@@ -446,13 +457,106 @@ onBeforeUnmount(() => {
             ><i class="h-2.5 w-2.5 rounded-full bg-red-700"></i>2,000+ ha</span
           >
         </div>
-        <span class="text-slate-500">Mesogeos · Historic observations</span>
+        <span class="text-[var(--wi-muted)]">Mesogeos · Historic observations</span>
       </div>
     </section>
-    <p class="px-1 text-[11px] leading-5 text-slate-500">
+    <p class="px-1 text-[11px] leading-5 text-[var(--wi-muted)]">
       Research prototype. Markers show recorded historical burned area, not predicted fire
       locations, risk or intensity. Country identification uses simplified Natural Earth boundaries;
       some coastal records may be unassigned.
     </p>
   </div>
 </template>
+
+<style>
+/* Leaflet creates popup DOM outside Vue's scoped template styling. */
+.wi-observatory .leaflet-popup-content-wrapper {
+  background: var(--wi-surface);
+  color: var(--wi-text);
+  border: 1px solid var(--wi-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.22);
+}
+
+.wi-observatory .leaflet-popup-tip {
+  background: var(--wi-surface);
+}
+
+.wi-observatory .leaflet-popup-content {
+  margin: 14px;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.wi-observatory .leaflet-popup-close-button {
+  color: var(--wi-muted) !important;
+}
+
+.wi-fire-popup-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--wi-text);
+  margin-bottom: 8px;
+}
+
+.wi-fire-popup-area {
+  background: var(--wi-surface-alt);
+  border: 1px solid var(--wi-border);
+  border-left: 3px solid var(--wi-orange);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.wi-fire-popup-caption {
+  color: var(--wi-orange);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wi-fire-popup-number {
+  color: var(--wi-text);
+  font-size: 20px;
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.wi-fire-popup-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--wi-border);
+  font-size: 12px;
+}
+
+.wi-fire-popup-line:last-child {
+  border-bottom: none;
+}
+.wi-fire-popup-key {
+  color: var(--wi-muted);
+}
+.wi-fire-popup-value {
+  color: var(--wi-text);
+  text-align: right;
+}
+
+.wi-observatory select {
+  color-scheme: light;
+}
+:root[data-theme='dark'] .wi-observatory select {
+  color-scheme: dark;
+}
+
+/* Leaflet controls and attribution are readable in both themes. */
+.wi-observatory .leaflet-control-zoom a {
+  background: var(--wi-surface);
+  color: var(--wi-text);
+  border-color: var(--wi-border);
+}
+.wi-observatory .leaflet-control-zoom a:hover {
+  background: var(--wi-surface-alt);
+  color: var(--wi-text);
+}
+</style>

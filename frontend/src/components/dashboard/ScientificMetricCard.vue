@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 withDefaults(
   defineProps<{
@@ -14,25 +13,23 @@ withDefaults(
   },
 )
 
+// Accent colors remain independent of light/dark mode.
+// Card backgrounds, borders and text use global theme variables.
 const tones = {
   teal: {
-    card: 'border-teal-200/80 bg-gradient-to-br from-white to-teal-50/80',
-    icon: 'bg-teal-100 text-teal-700',
-    accent: 'bg-teal-500',
+    icon: 'text-[var(--wi-teal)]',
+    accent: 'bg-[var(--wi-teal)]',
   },
   blue: {
-    card: 'border-blue-200/80 bg-gradient-to-br from-white to-blue-50/80',
-    icon: 'bg-blue-100 text-blue-700',
-    accent: 'bg-blue-500',
+    icon: 'text-[var(--wi-blue)]',
+    accent: 'bg-[var(--wi-blue)]',
   },
   orange: {
-    card: 'border-orange-200/80 bg-gradient-to-br from-white to-orange-50/80',
-    icon: 'bg-orange-100 text-orange-700',
-    accent: 'bg-orange-500',
+    icon: 'text-[var(--wi-orange)]',
+    accent: 'bg-[var(--wi-orange)]',
   },
   purple: {
-    card: 'border-violet-200/80 bg-gradient-to-br from-white to-violet-50/80',
-    icon: 'bg-violet-100 text-violet-700',
+    icon: 'text-violet-500',
     accent: 'bg-violet-500',
   },
 }
@@ -40,31 +37,31 @@ const tones = {
 
 <template>
   <article
-    class="relative overflow-hidden rounded-2xl border p-6 shadow-sm
-           transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-    :class="tones[tone].card"
+    class="relative overflow-hidden rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
   >
-    <div
-      class="absolute inset-x-0 top-0 h-1"
-      :class="tones[tone].accent"
-    ></div>
+    <!-- Scientific accent line -->
+    <div class="absolute inset-x-0 top-0 h-1" :class="tones[tone].accent"></div>
 
+    <!-- Metric icon -->
     <div
-      class="mb-5 flex h-12 w-12 items-center justify-center rounded-xl"
+      class="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)]"
       :class="tones[tone].icon"
     >
       <i :class="icon" class="text-xl" aria-hidden="true"></i>
     </div>
 
+    <!-- Metric label -->
     <p class="text-sm font-medium text-[var(--wi-muted)]">
       {{ label }}
     </p>
 
+    <!-- Metric value -->
     <p class="mt-2 text-3xl font-bold tracking-tight text-[var(--wi-text)]">
       {{ value }}
     </p>
 
-    <p class="mt-3 text-sm leading-relaxed text-slate-600">
+    <!-- Metric description -->
+    <p class="mt-3 text-sm leading-relaxed text-[var(--wi-muted)]">
       {{ description }}
     </p>
   </article>

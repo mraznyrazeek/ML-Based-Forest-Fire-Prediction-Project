@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
 import InputNumber from 'primevue/inputnumber'
@@ -37,13 +36,12 @@ const total = computed(() =>
   categories.reduce((sum, category) => sum + (values[category.key] ?? 0), 0),
 )
 
-const allProvided = computed(() =>
-  categories.every((category) => values[category.key] !== null),
-)
+const allProvided = computed(() => categories.every((category) => values[category.key] !== null))
 
 const inRange = computed(() =>
   categories.every((category) => {
     const value = values[category.key]
+
     return value !== null && Number.isFinite(value) && value >= 0 && value <= 1
   }),
 )
@@ -52,9 +50,7 @@ const isValid = computed(
   () => allProvided.value && inRange.value && Math.abs(total.value - 1) <= 0.001,
 )
 
-const percentage = computed(() =>
-  Math.max(0, Math.min(total.value * 100, 100)),
-)
+const percentage = computed(() => Math.max(0, Math.min(total.value * 100, 100)))
 
 function updateValue(key: LandCoverKey, value: number | null) {
   values[key] = value
@@ -65,24 +61,20 @@ function updateValue(key: LandCoverKey, value: number | null) {
 
 <template>
   <section class="space-y-6">
+    <!-- Heading -->
     <div>
-      <h3 class="text-lg font-bold text-[var(--wi-text)]">
-        Land Cover Composition
-      </h3>
+      <h3 class="text-lg font-bold text-[var(--wi-text)]">Land Cover Composition</h3>
 
       <p class="mt-2 text-sm leading-6 text-[var(--wi-muted)]">
-        Enter the proportion of each land-cover category in the
-        wildfire observation area. Values must range from 0 to 1,
-        and all eight proportions must sum to 1.
+        Enter the proportion of each land-cover category in the wildfire observation area. Values
+        must range from 0 to 1, and all eight proportions must sum to 1.
       </p>
     </div>
 
+    <!-- Land cover input fields -->
     <div class="grid gap-5 sm:grid-cols-2">
       <div v-for="category in categories" :key="category.key">
-        <label
-          :for="category.key"
-          class="mb-2 block text-sm font-medium text-[var(--wi-text)]"
-        >
+        <label :for="category.key" class="mb-2 block text-sm font-medium text-[var(--wi-text)]">
           {{ category.label }}
         </label>
 
@@ -100,35 +92,42 @@ function updateValue(key: LandCoverKey, value: number | null) {
       </div>
     </div>
 
-    <div class="rounded-xl border border-[var(--wi-border)] bg-slate-50 p-5">
+    <!-- Theme-aware land cover summary -->
+    <div class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-5">
       <div class="mb-3 flex items-center justify-between gap-3">
-        <span class="text-sm font-semibold text-[var(--wi-text)]">
-          Total Land Cover
-        </span>
+        <span class="text-sm font-semibold text-[var(--wi-text)]"> Total Land Cover </span>
 
         <span
           class="text-lg font-bold"
-          :class="isValid ? 'text-teal-700' : 'text-orange-700'"
+          :class="isValid ? 'text-[var(--wi-teal)]' : 'text-[var(--wi-orange)]'"
         >
           {{ (total * 100).toFixed(2) }}%
         </span>
       </div>
 
-      <ProgressBar :value="percentage" :showValue="false" />
+      <!-- PrimeVue progress indicator -->
+      <ProgressBar
+        class="wi-landcover-progress"
+        :class="isValid ? 'wi-landcover-progress--valid' : 'wi-landcover-progress--invalid'"
+        :value="percentage"
+        :showValue="false"
+      />
 
+      <!-- Validation message -->
       <p
-        class="mt-3 text-sm"
-        :class="isValid ? 'text-teal-700' : 'text-orange-700'"
+        class="mt-3 flex items-start gap-2 text-sm leading-6"
+        :class="isValid ? 'text-[var(--wi-teal)]' : 'text-[var(--wi-orange)]'"
         role="status"
       >
-        <template v-if="isValid">
-          <i class="pi pi-check-circle mr-1" aria-hidden="true"></i>
-          Valid land-cover composition.
-        </template>
-        <template v-else>
-          <i class="pi pi-info-circle mr-1" aria-hidden="true"></i>
-          Enter all eight proportions so their total equals 100%.
-        </template>
+        <i
+          :class="isValid ? 'pi pi-check-circle' : 'pi pi-info-circle'"
+          class="mt-1 shrink-0"
+          aria-hidden="true"
+        ></i>
+
+        <span v-if="isValid"> Valid land-cover composition. </span>
+
+        <span v-else> Enter all eight proportions so their total equals 100%. </span>
       </p>
     </div>
   </section>

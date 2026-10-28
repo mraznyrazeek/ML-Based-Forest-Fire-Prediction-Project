@@ -1,33 +1,62 @@
 
 @import "tailwindcss";
 
-
 /* Wildfire Intelligence — Global Design Tokens */
+
+/* Default Light Theme */
 :root {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  color: #102238;
-  background: #f5f8fb;
 
   --wi-navy: #071827;
   --wi-navy-light: #102b40;
   --wi-teal: #008f87;
   --wi-orange: #f36b21;
   --wi-blue: #328fe8;
+
   --wi-canvas: #f5f8fb;
   --wi-surface: #ffffff;
+  --wi-surface-alt: #edf3f8;
   --wi-text: #102238;
   --wi-muted: #62758d;
   --wi-border: #dce6ee;
+
+  color: var(--wi-text);
+  background: var(--wi-canvas);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
+/* Dark Theme — Scientific Wildfire Observatory */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --wi-navy: #060e1a;
+  --wi-navy-light: #152a3d;
+  --wi-teal: #2dd4bf;
+  --wi-orange: #fb923c;
+  --wi-blue: #60a5fa;
+
+  --wi-canvas: #0b1422;
+  --wi-surface: #142338;
+  --wi-surface-alt: #1b3047;
+  --wi-text: #edf4fc;
+  --wi-muted: #9dafc6;
+  --wi-border: #2a3f56;
+}
+
+/* Global document styles */
+html {
+  min-height: 100%;
+  background: var(--wi-canvas);
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  color: var(--wi-text);
   background: var(--wi-canvas);
 }
 
@@ -37,5 +66,88 @@ body {
 
 ::selection {
   background: #b7e8e2;
-  color: var(--wi-navy);
+  color: #071827;
+}
+
+:root[data-theme="dark"] ::selection {
+  background: #23594f;
+  color: #ffffff;
+}
+
+
+/* ============================================================
+   Wildfire Intelligence — Theme-Aware Prediction Form Controls
+   ============================================================ */
+
+/* Native form controls within the prediction interface */
+.wi-prediction-form input:not([type="checkbox"]):not([type="radio"]),
+.wi-prediction-form select,
+.wi-prediction-form textarea {
+  background-color: var(--wi-surface-alt);
+  color: var(--wi-text);
+  border-color: var(--wi-border);
+  color-scheme: light;
+}
+
+/* PrimeVue InputNumber internal input */
+.wi-prediction-form .p-inputnumber-input,
+.wi-prediction-form .p-inputtext {
+  background-color: var(--wi-surface-alt);
+  color: var(--wi-text);
+  border: 1px solid var(--wi-border);
+  box-shadow: none;
+}
+
+/* Placeholder visibility */
+.wi-prediction-form input::placeholder,
+.wi-prediction-form textarea::placeholder {
+  color: var(--wi-muted);
+  opacity: 0.75;
+}
+
+/* Focus state */
+.wi-prediction-form input:focus,
+.wi-prediction-form select:focus,
+.wi-prediction-form textarea:focus,
+.wi-prediction-form .p-inputnumber-input:focus {
+  border-color: var(--wi-teal);
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--wi-teal) 20%, transparent);
+}
+
+/* Dark appearance for browser-native date controls */
+:root[data-theme="dark"] .wi-prediction-form input[type="date"] {
+  color-scheme: dark;
+}
+
+/* Theme-aware scientific information panels */
+.wi-info-panel {
+  background-color: var(--wi-surface-alt);
+  border: 1px solid var(--wi-border);
+  color: var(--wi-muted);
+}
+
+.wi-info-panel i {
+  color: var(--wi-blue);
+}
+
+
+/* Land Cover — theme-aware PrimeVue progress bar */
+
+.wi-landcover-progress.p-progressbar {
+  height: 12px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: var(--wi-surface);
+  border: 1px solid var(--wi-border);
+}
+
+.wi-landcover-progress .p-progressbar-value {
+  background: var(--wi-orange);
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+
+.wi-landcover-progress--valid .p-progressbar-value {
+  background: var(--wi-teal);
 }

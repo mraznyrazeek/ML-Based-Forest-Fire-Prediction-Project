@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import ScientificMetricCard from '@/components/dashboard/ScientificMetricCard.vue'
 
@@ -61,32 +60,28 @@ const workflowSteps = [
   {
     number: '01',
     title: 'Wildfire Data',
-    description:
-      'Environmental and geographical information describing an existing wildfire.',
+    description: 'Environmental and geographical information describing an existing wildfire.',
     icon: 'pi pi-map',
     tone: 'teal',
   },
   {
     number: '02',
     title: 'Feature Processing',
-    description:
-      'Missing-value handling and feature engineering produce 44 model inputs.',
+    description: 'Missing-value handling and feature engineering produce 44 model inputs.',
     icon: 'pi pi-sliders-h',
     tone: 'blue',
   },
   {
     number: '03',
     title: 'XGBoost Prediction',
-    description:
-      'The optimized machine learning model estimates burned area in hectares.',
+    description: 'The optimized machine learning model estimates burned area in hectares.',
     icon: 'pi pi-chart-line',
     tone: 'purple',
   },
   {
     number: '04',
     title: 'Research Interpretation',
-    description:
-      'The estimated area is reviewed alongside model limitations and uncertainty.',
+    description: 'The estimated area is reviewed alongside model limitations and uncertainty.',
     icon: 'pi pi-file',
     tone: 'orange',
   },
@@ -94,19 +89,24 @@ const workflowSteps = [
 </script>
 
 <template>
-  <div class="space-y-9">
-    <!-- Dashboard heading -->
-    <header class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white px-7 py-8 shadow-sm sm:px-9">
+  <div class="space-y-8 text-[var(--wi-text)]">
+    <!-- Research dashboard hero -->
+    <header
+      class="relative overflow-hidden rounded-3xl border border-[var(--wi-border)] bg-[var(--wi-surface)] px-6 py-7 shadow-sm sm:px-8"
+    >
+      <!-- Subtle theme-aware accents -->
       <div
-        class="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-teal-100/60 blur-3xl"
+        class="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[var(--wi-teal)] opacity-[0.055] blur-3xl"
       ></div>
+
       <div
-        class="pointer-events-none absolute -bottom-32 right-24 h-56 w-56 rounded-full bg-orange-100/50 blur-3xl"
+        class="pointer-events-none absolute -bottom-32 right-24 h-56 w-56 rounded-full bg-[var(--wi-orange)] opacity-[0.045] blur-3xl"
       ></div>
 
       <div class="relative max-w-3xl">
         <div class="mb-4 flex items-center gap-2">
           <span class="h-2 w-2 rounded-full bg-[var(--wi-teal)]"></span>
+
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--wi-orange)]">
             Research Dashboard
           </p>
@@ -114,46 +114,69 @@ const workflowSteps = [
 
         <h1 class="text-3xl font-extrabold tracking-tight text-[var(--wi-text)] sm:text-4xl">
           Forest Fire Burned Area
-          <span class="text-[var(--wi-orange)]">Prediction</span>
+          <span class="text-[var(--wi-orange)]"> Prediction </span>
         </h1>
 
         <p class="mt-4 max-w-2xl text-sm leading-7 text-[var(--wi-muted)] sm:text-base">
-          Explore the evaluation results of our machine learning model
-          developed to estimate the eventual burned area of existing
-          wildfires using environmental and geographical data.
+          Explore the evaluation results of our machine learning model developed to estimate the
+          eventual burned area of existing wildfires using environmental and geographical data.
         </p>
 
+        <!-- Research badges -->
         <div class="mt-5 flex flex-wrap gap-2">
-          <span class="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
-            <i class="pi pi-database mr-1" aria-hidden="true"></i>
+          <span
+            class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
+            :style="{
+              color: 'var(--wi-teal)',
+              borderColor: 'var(--wi-border)',
+              backgroundColor: 'var(--wi-surface-alt)',
+            }"
+          >
+            <i class="pi pi-database mr-2" aria-hidden="true"></i>
             Historical Research Data
           </span>
-          <span class="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-            <i class="pi pi-chart-line mr-1" aria-hidden="true"></i>
+
+          <span
+            class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
+            :style="{
+              color: 'var(--wi-blue)',
+              borderColor: 'var(--wi-border)',
+              backgroundColor: 'var(--wi-surface-alt)',
+            }"
+          >
+            <i class="pi pi-chart-line mr-2" aria-hidden="true"></i>
             XGBoost Model
           </span>
-          <span class="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">
-            <i class="pi pi-info-circle mr-1" aria-hidden="true"></i>
+
+          <span
+            class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
+            :style="{
+              color: 'var(--wi-orange)',
+              borderColor: 'var(--wi-border)',
+              backgroundColor: 'var(--wi-surface-alt)',
+            }"
+          >
+            <i class="pi pi-info-circle mr-2" aria-hidden="true"></i>
             Research Prototype
           </span>
         </div>
       </div>
     </header>
 
-    <!-- Model performance -->
+    <!-- Model Performance -->
     <section aria-labelledby="performance-heading">
       <div class="mb-5 flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)] text-[var(--wi-teal)]"
+        >
           <i class="pi pi-chart-bar text-lg" aria-hidden="true"></i>
         </div>
 
         <div>
-          <h2
-            id="performance-heading"
-            class="text-xl font-bold text-[var(--wi-text)]"
-          >
+          <h2 id="performance-heading" class="text-xl font-bold text-[var(--wi-text)]">
             Model Performance
           </h2>
+
           <p class="mt-1 text-sm text-[var(--wi-muted)]">
             Optimized XGBoost model — held-out test dataset
           </p>
@@ -173,18 +196,17 @@ const workflowSteps = [
       </div>
     </section>
 
-    <!-- Dataset summary -->
+    <!-- Dataset Summary -->
     <section aria-labelledby="dataset-heading">
       <div class="mb-5 flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)] text-[var(--wi-teal)]"
+        >
           <i class="pi pi-database text-lg" aria-hidden="true"></i>
         </div>
 
         <div>
-          <h2
-            id="dataset-heading"
-            class="text-xl font-bold text-[var(--wi-text)]"
-          >
+          <h2 id="dataset-heading" class="text-xl font-bold text-[var(--wi-text)]">
             Dataset Summary
           </h2>
 
@@ -208,25 +230,25 @@ const workflowSteps = [
 
       <p class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-[var(--wi-muted)]">
         <i class="pi pi-info-circle mt-0.5" aria-hidden="true"></i>
+
         <span>
-          Source: Processed Mesogeos wildfire research dataset.
-          The original extract contained 11,305 records before deduplication.
+          Source: Processed Mesogeos wildfire research dataset. The original extract contained
+          11,305 records before deduplication.
         </span>
       </p>
     </section>
 
-    <!-- Prediction workflow -->
+    <!-- Prediction Workflow -->
     <section aria-labelledby="workflow-heading">
       <div class="mb-5 flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)] text-[var(--wi-blue)]"
+        >
           <i class="pi pi-sitemap text-lg" aria-hidden="true"></i>
         </div>
 
         <div>
-          <h2
-            id="workflow-heading"
-            class="text-xl font-bold text-[var(--wi-text)]"
-          >
+          <h2 id="workflow-heading" class="text-xl font-bold text-[var(--wi-text)]">
             Prediction Engine & Research Workflow
           </h2>
 
@@ -240,16 +262,16 @@ const workflowSteps = [
         <article
           v-for="step in workflowSteps"
           :key="step.number"
-          class="relative rounded-2xl border border-[var(--wi-border)] bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+          class="relative rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
         >
           <div class="mb-5 flex items-center justify-between">
             <div
-              class="flex h-11 w-11 items-center justify-center rounded-xl"
+              class="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)]"
               :class="{
-                'bg-teal-100 text-teal-700': step.tone === 'teal',
-                'bg-blue-100 text-blue-700': step.tone === 'blue',
-                'bg-violet-100 text-violet-700': step.tone === 'purple',
-                'bg-orange-100 text-orange-700': step.tone === 'orange',
+                'text-[var(--wi-teal)]': step.tone === 'teal',
+                'text-[var(--wi-blue)]': step.tone === 'blue',
+                'text-violet-500': step.tone === 'purple',
+                'text-[var(--wi-orange)]': step.tone === 'orange',
               }"
             >
               <i :class="step.icon" class="text-xl" aria-hidden="true"></i>
@@ -258,10 +280,10 @@ const workflowSteps = [
             <span
               class="text-sm font-bold tracking-wider"
               :class="{
-                'text-teal-600': step.tone === 'teal',
-                'text-blue-600': step.tone === 'blue',
-                'text-violet-600': step.tone === 'purple',
-                'text-orange-600': step.tone === 'orange',
+                'text-[var(--wi-teal)]': step.tone === 'teal',
+                'text-[var(--wi-blue)]': step.tone === 'blue',
+                'text-violet-500': step.tone === 'purple',
+                'text-[var(--wi-orange)]': step.tone === 'orange',
               }"
             >
               {{ step.number }}
@@ -280,47 +302,53 @@ const workflowSteps = [
 
       <p class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-[var(--wi-muted)]">
         <i class="pi pi-info-circle mt-0.5" aria-hidden="true"></i>
+
         <span>
-          Research prototype: this workflow describes the backend model
-          pipeline. Interactive frontend prediction integration is under development.
+          Research prototype: the Flask backend processes environmental features and uses an
+          optimized XGBoost model to estimate burned area. Interactive predictions are available in
+          the Burned Area Prediction section.
         </span>
       </p>
     </section>
 
-    <!-- Research interpretation -->
+    <!-- Research Interpretation -->
     <section
       aria-labelledby="interpretation-heading"
-      class="relative overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-6 shadow-sm sm:p-7"
+      class="relative overflow-hidden rounded-2xl border p-6 shadow-sm sm:p-7"
+      :style="{
+        backgroundColor: 'var(--wi-surface)',
+        borderColor: 'var(--wi-border)',
+      }"
     >
+      <div class="pointer-events-none absolute inset-y-0 left-0 w-1 bg-[var(--wi-orange)]"></div>
+
       <div class="relative flex items-start gap-4">
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700">
+        <div
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)] text-[var(--wi-orange)]"
+        >
           <i class="pi pi-exclamation-triangle text-xl" aria-hidden="true"></i>
         </div>
 
         <div>
-          <h2
-            id="interpretation-heading"
-            class="text-lg font-bold text-orange-950"
-          >
+          <h2 id="interpretation-heading" class="text-lg font-bold text-[var(--wi-text)]">
             Research Interpretation
           </h2>
 
-          <p class="mt-2 text-sm leading-7 text-orange-900">
-            The model demonstrates measurable predictive capability on
-            log-transformed burned area, but its performance is considerably
-            weaker when evaluated in actual hectares. Extreme wildfire
-            events may be substantially underestimated.
+          <p class="mt-2 text-sm leading-7 text-[var(--wi-muted)]">
+            The model demonstrates measurable predictive capability on log-transformed burned area,
+            but its performance is considerably weaker when evaluated in actual hectares. Extreme
+            wildfire events may be substantially underestimated.
           </p>
 
-          <p class="mt-3 text-sm font-medium leading-7 text-orange-950">
-            Predictions are experimental research estimates and should
-            not be used as operational fire-management guidance.
+          <p class="mt-3 text-sm font-medium leading-7 text-[var(--wi-orange)]">
+            Predictions are experimental research estimates and should not be used as operational
+            fire-management guidance.
           </p>
         </div>
       </div>
     </section>
 
-    <!-- Research footer -->
+    <!-- Research Footer -->
     <footer class="border-t border-[var(--wi-border)] pt-5">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-xs text-[var(--wi-muted)]">
