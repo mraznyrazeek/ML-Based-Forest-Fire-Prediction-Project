@@ -1,7 +1,6 @@
 
 from functools import lru_cache
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
@@ -172,4 +171,62 @@ def get_environmental_relationships():
         "method": "Quantile-based descriptive grouping",
         "relationships": results,
     }
+
+
+def get_monthly_wildfire_seasonality():
+    """Summarize recorded wildfire observations by calendar month."""
+
+    data = load_analytics_dataset().copy()
+
+    # Keep only valid calendar months.
+    data["month"] = pd.to_numeric(data["month"], errors="coerce")
+
+    valid = (
+        data["month"].notna()
+        & data["month"].between(1, 12)
+        & (data["month"] % 1 == 0)
+    )
+
+    data = data.loc[valid].copy()
+    data["month"] = data["month"].astype(int)
+
+    monthly = (
+        data.groupby("month")
+        .agg(
+            observation_count=("burned_area_ha", "size"),
+            total_burned_area_ha=("burned_area_ha", "sum"),
+            mean_burned_area_ha=("burned_area_ha", "mean"),
+            median_burned_area_ha=("burned_area_ha", "median"),
+            largest_fire_ha=("burned_area_ha", "max"),
+        )
+        .reset_index()
+        .sort_values("month")
+    )
+
+    month_names = [
+        "January", "February", "March", "April",
+        "May", "June", "July", "August",
+        "September", "October", "November", "December",
+    ]
+
+    records = []
+
+    for row in monthly.itertuples(index=False):
+        records.append({
+            "month": int(row.month),
+            "month_name": month_names[int(row.month) - 1],
+            "observation_count": int(row.observation_count),
+            "total_burned_area_ha": round(float(row.total_burned_area_ha), 2),
+            "mean_burned_area_ha": round(float(row.mean_burned_area_ha), 2),
+            "median_burned_area_ha": round(float(row.median_burned_area_ha), 2),
+            "largest_fire_ha": round(float(row.largest_fire_ha), 2),
+        })
+
+    return {
+        "dataset": "Mesogeos historical wildfire observations",
+        "total_observations": int(len(data)),
+        "month_count": len(records),
+        "monthly_seasonality": records,
+    }
+
 

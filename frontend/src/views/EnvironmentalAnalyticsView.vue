@@ -17,9 +17,11 @@ import {
 import {
   getAnnualWildfireTrends,
   getEnvironmentalRelationships,
+  getMonthlyWildfireSeasonality,
   type AnnualWildfireTrend,
   type EnvironmentalRelationship,
   type EnvironmentalVariable,
+  type MonthlyWildfireSeasonality,
 } from '@/services/analyticsService'
 import { useTheme } from '@/composables/useTheme'
 
@@ -34,6 +36,9 @@ const relationships = ref<EnvironmentalRelationship[]>([])
 const relationshipsLoading = ref(false)
 const relationshipsError = ref('')
 const selectedVariable = ref<EnvironmentalVariable>('temperature_c')
+const monthlyRecords = ref<MonthlyWildfireSeasonality[]>([])
+const monthlyLoading = ref(false)
+const monthlyError = ref('')
 let active = true
 
 const isDark = computed(() => theme.value === 'dark')
@@ -302,6 +307,93 @@ async function loadRelationships() {
   }
 }
 
+// Monthly statistics are pooled across all available years, rather than annualized rates.
+const monthLabels = computed(() => monthlyRecords.value.map((row) => row.month_name.slice(0, 3)))
+
+const peakMonth = computed(() =>
+  monthlyRecords.value.length
+    ? monthlyRecords.value.reduce((peak, row) =>
+        row.observation_count > peak.observation_count ? row : peak,
+      )
+    : null,
+)
+
+const peakAreaMonth = computed(() =>
+  monthlyRecords.value.length
+    ? monthlyRecords.value.reduce((peak, row) =>
+        row.total_burned_area_ha > peak.total_burned_area_ha ? row : peak,
+      )
+    : null,
+)
+
+const summerObservationsPercent = computed(() => {
+  const total = monthlyRecords.value.reduce((sum, row) => sum + row.observation_count, 0)
+  const julyAugust = monthlyRecords.value
+    .filter((row) => row.month === 7 || row.month === 8)
+    .reduce((sum, row) => sum + row.observation_count, 0)
+  return total ? (julyAugust / total) * 100 : 0
+})
+
+const monthlyObservationsData = computed<ChartData<'bar'>>(() => ({
+  labels: monthLabels.value,
+  datasets: [
+    {
+      label: 'Recorded observations',
+      data: monthlyRecords.value.map((row) => row.observation_count),
+      backgroundColor: monthlyRecords.value.map((row) =>
+        row.month === 7 || row.month === 8 ? palette.value.orange : palette.value.teal,
+      ),
+      borderRadius: 5,
+      maxBarThickness: 35,
+    },
+  ],
+}))
+
+const monthlyAreaData = computed<ChartData<'bar'>>(() => ({
+  labels: monthLabels.value,
+  datasets: [
+    {
+      label: 'Recorded burned area (ha)',
+      data: monthlyRecords.value.map((row) => row.total_burned_area_ha),
+      backgroundColor: palette.value.orange,
+      borderRadius: 5,
+      maxBarThickness: 35,
+    },
+  ],
+}))
+
+const monthlyMedianData = computed<ChartData<'line'>>(() => ({
+  labels: monthLabels.value,
+  datasets: [
+    {
+      label: 'Median recorded burned area',
+      data: monthlyRecords.value.map((row) => row.median_burned_area_ha),
+      borderColor: palette.value.teal,
+      backgroundColor: palette.value.teal,
+      borderWidth: 2.5,
+      tension: 0.25,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+    },
+  ],
+}))
+
+async function loadMonthlySeasonality() {
+  monthlyLoading.value = true
+  monthlyError.value = ''
+  try {
+    const response = await getMonthlyWildfireSeasonality()
+    if (!active) return
+    monthlyRecords.value = response.monthly_seasonality.slice().sort((a, b) => a.month - b.month)
+  } catch (cause) {
+    if (!active) return
+    monthlyError.value =
+      cause instanceof Error ? cause.message : 'Unable to load monthly seasonality.'
+  } finally {
+    if (active) monthlyLoading.value = false
+  }
+}
+
 function formatNumber(value: number): string {
   return value.toLocaleString('en-US', {
     maximumFractionDigits: 2,
@@ -330,12 +422,14 @@ async function loadAnalytics() {
 function refreshAnalytics() {
   void loadAnalytics()
   void loadRelationships()
+  void loadMonthlySeasonality()
 }
 
 onMounted(() => {
   active = true
   void loadAnalytics()
   void loadRelationships()
+  void loadMonthlySeasonality()
 })
 
 onBeforeUnmount(() => {
@@ -371,7 +465,7 @@ onBeforeUnmount(() => {
 
       <button
         type="button"
-        :disabled="loading"
+        :disabled="loading || monthlyLoading || relationshipsLoading"
         class="rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-2 text-xs font-semibold text-[var(--wi-text)] hover:opacity-80 disabled:opacity-50"
         @click="refreshAnalytics"
       >
@@ -495,6 +589,112 @@ onBeforeUnmount(() => {
         >
           When the mean exceeds the median substantially, large observations are influencing the
           annual average. The median is less sensitive to extreme burned-area values.
+        </p>
+      </section>
+
+      <!-- Monthly seasonality: pooled across the full historical dataset -->
+      <section
+        class="rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] p-4"
+        aria-label="Monthly wildfire seasonality"
+      >
+        <div class="mb-4">
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--wi-orange)]">
+            Historical seasonal patterns
+          </p>
+          <h2 class="mt-1 text-sm font-bold text-[var(--wi-text)]">Monthly Wildfire Seasonality</h2>
+          <p class="mt-1 text-xs text-[var(--wi-muted)]">
+            Calendar-month summaries pooled across the Mesogeos observation period (2006–2022)
+          </p>
+        </div>
+
+        <div v-if="monthlyLoading" role="status" class="py-6 text-sm text-[var(--wi-muted)]">
+          <i class="pi pi-spin pi-spinner mr-2" aria-hidden="true"></i>
+          Loading monthly seasonality...
+        </div>
+
+        <div
+          v-if="monthlyError"
+          role="alert"
+          class="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-3 text-sm text-red-500"
+        >
+          {{ monthlyError }}
+          <button type="button" class="ml-3 font-bold underline" @click="loadMonthlySeasonality">
+            Retry
+          </button>
+        </div>
+
+        <template v-if="monthlyRecords.length && !monthlyLoading">
+          <div class="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div class="rounded-xl bg-[var(--wi-surface-alt)] px-3 py-3">
+              <p class="text-[11px] text-[var(--wi-muted)]">Peak observation month</p>
+              <strong class="mt-1 block text-lg text-[var(--wi-teal)]">
+                {{ peakMonth?.month_name ?? '—' }}
+              </strong>
+              <p class="text-[11px] text-[var(--wi-muted)]">
+                {{ formatNumber(peakMonth?.observation_count ?? 0) }} observations
+              </p>
+            </div>
+            <div class="rounded-xl bg-[var(--wi-surface-alt)] px-3 py-3">
+              <p class="text-[11px] text-[var(--wi-muted)]">Peak recorded burned-area month</p>
+              <strong class="mt-1 block text-lg text-[var(--wi-orange)]">
+                {{ peakAreaMonth?.month_name ?? '—' }}
+              </strong>
+              <p class="text-[11px] text-[var(--wi-muted)]">
+                {{ formatNumber(peakAreaMonth?.total_burned_area_ha ?? 0) }} ha
+              </p>
+            </div>
+            <div class="rounded-xl bg-[var(--wi-surface-alt)] px-3 py-3">
+              <p class="text-[11px] text-[var(--wi-muted)]">July–August share of observations</p>
+              <strong class="mt-1 block text-lg text-[var(--wi-blue)]">
+                {{ summerObservationsPercent.toFixed(1) }}%
+              </strong>
+              <p class="text-[11px] text-[var(--wi-muted)]">Share of sampled records</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <article class="min-w-0 rounded-xl border border-[var(--wi-border)] p-3">
+              <h3 class="text-sm font-bold text-[var(--wi-text)]">Monthly Wildfire Observations</h3>
+              <p class="mt-1 text-xs text-[var(--wi-muted)]">Observation count by calendar month</p>
+              <div class="mt-4 h-[270px]">
+                <Bar
+                  :key="`month-count-${theme}`"
+                  :data="monthlyObservationsData"
+                  :options="barOptions"
+                />
+              </div>
+            </article>
+            <article class="min-w-0 rounded-xl border border-[var(--wi-border)] p-3">
+              <h3 class="text-sm font-bold text-[var(--wi-text)]">Monthly Recorded Burned Area</h3>
+              <p class="mt-1 text-xs text-[var(--wi-muted)]">Sum of burned areas (ha) by month</p>
+              <div class="mt-4 h-[270px]">
+                <Bar :key="`month-area-${theme}`" :data="monthlyAreaData" :options="barOptions" />
+              </div>
+            </article>
+          </div>
+
+          <article class="mt-4 rounded-xl border border-[var(--wi-border)] p-3">
+            <h3 class="text-sm font-bold text-[var(--wi-text)]">Median Wildfire Size by Month</h3>
+            <p class="mt-1 text-xs text-[var(--wi-muted)]">
+              Typical recorded burned area per observation (ha), not the monthly total
+            </p>
+            <div class="mt-4 h-[260px]">
+              <Line
+                :key="`month-median-${theme}`"
+                :data="monthlyMedianData"
+                :options="lineOptions"
+              />
+            </div>
+          </article>
+
+          <p class="mt-3 text-xs leading-5 text-[var(--wi-muted)]">
+            Research note: Each month's statistics pool observations across all available years.
+            Counts and area sums describe records in this dataset, not a complete regional census or
+            annualized rates. Higher observation counts do not necessarily imply larger fires.
+          </p>
+        </template>
+        <p v-else-if="!monthlyLoading && !monthlyError" class="py-6 text-sm text-[var(--wi-muted)]">
+          No monthly observations available.
         </p>
       </section>
 

@@ -11,6 +11,7 @@ from .services.history_service import (
 from .services.analytics_service import (
     get_annual_wildfire_trends,
     get_environmental_relationships,
+    get_monthly_wildfire_seasonality,
 )
 
 def create_app():
@@ -237,5 +238,23 @@ def create_app():
                 "status": "error",
                 "message": str(error),
             }), 400
+
+    
+    @app.get("/api/analytics/monthly-seasonality")
+    def monthly_wildfire_seasonality():
+        try:
+            result = get_monthly_wildfire_seasonality()
+
+            return jsonify({
+                "status": "success",
+                **result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
+
 
     return app

@@ -143,3 +143,74 @@ export async function getEnvironmentalRelationships(): Promise<EnvironmentalRela
   return data as EnvironmentalRelationshipsResponse
 }
 
+
+export interface MonthlyWildfireSeasonality {
+  month: number
+  month_name: string
+  observation_count: number
+  total_burned_area_ha: number
+  mean_burned_area_ha: number
+  median_burned_area_ha: number
+  largest_fire_ha: number
+}
+
+export interface MonthlySeasonalityResponse {
+  status: 'success'
+  dataset: string
+  total_observations: number
+  month_count: number
+  monthly_seasonality: MonthlyWildfireSeasonality[]
+}
+
+export async function getMonthlyWildfireSeasonality(): Promise<MonthlySeasonalityResponse> {
+  let response: Response
+
+  try {
+    response = await fetch('/api/analytics/monthly-seasonality')
+  } catch {
+    throw new Error(
+      'Unable to connect to the Monthly Seasonality API. Check that Flask is running.',
+    )
+  }
+
+  let data: Partial<MonthlySeasonalityResponse> & {
+    message?: string
+  }
+
+  try {
+    data = (await response.json()) as typeof data
+  } catch {
+    throw new Error(
+      'The Monthly Seasonality API returned an invalid JSON response.',
+    )
+  }
+
+  if (!response.ok || data.status !== 'success') {
+    throw new Error(
+      data.message ??
+        `Unable to load monthly seasonality (HTTP ${response.status}).`,
+    )
+  }
+
+  if (
+    !Array.isArray(data.monthly_seasonality) ||
+    !Number.isInteger(data.total_observations) ||
+    !Number.isInteger(data.month_count) ||
+    !data.monthly_seasonality.every(
+      (item) =>
+        Number.isInteger(item.month) &&
+        item.month >= 1 &&
+        item.month <= 12 &&
+        typeof item.month_name === 'string' &&
+        Number.isInteger(item.observation_count) &&
+        Number.isFinite(item.total_burned_area_ha) &&
+        Number.isFinite(item.median_burned_area_ha),
+    )
+  ) {
+    throw new Error('The Monthly Seasonality API response is incomplete.')
+  }
+
+  return data as MonthlySeasonalityResponse
+}
+
+
