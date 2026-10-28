@@ -111,3 +111,71 @@ export async function getHistoricalWildfires(
 
   return data as HistoricalWildfireResponse
 }
+
+
+export interface HistoricalWildfireDetails {
+  record_id: number
+  date: string
+  year: number
+  country: string
+  latitude: number
+  longitude: number
+  burned_area_ha: number
+  dataset: string
+  measurements: Record<string, string | number | null>
+}
+
+export interface HistoricalWildfireDetailsResponse {
+  status: 'success'
+  record: HistoricalWildfireDetails
+}
+
+export async function getHistoricalWildfireDetails(
+  recordId: number,
+): Promise<HistoricalWildfireDetails> {
+  if (!Number.isInteger(recordId) || recordId < 0) {
+    throw new Error('A valid historical wildfire record ID is required.')
+  }
+
+  let response: Response
+
+  try {
+    response = await fetch(`/api/wildfires/history/${recordId}`)
+  } catch {
+    throw new Error(
+      'Unable to reach the historical wildfire details API. Check that Flask is running.',
+    )
+  }
+
+  let data: Partial<HistoricalWildfireDetailsResponse> & {
+    message?: string
+  }
+
+  try {
+    data = (await response.json()) as typeof data
+  } catch {
+    throw new Error(
+      'The historical wildfire details API returned an invalid response.',
+    )
+  }
+
+  if (!response.ok || data.status !== 'success') {
+    throw new Error(
+      data.message ??
+        `Unable to load wildfire details (HTTP ${response.status}).`,
+    )
+  }
+
+  if (
+    !data.record ||
+    data.record.record_id !== recordId ||
+    typeof data.record.measurements !== 'object' ||
+    data.record.measurements === null ||
+    Array.isArray(data.record.measurements)
+  ) {
+    throw new Error('The historical wildfire details response is incomplete.')
+  }
+
+  return data.record
+}
+

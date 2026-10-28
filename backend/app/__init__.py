@@ -4,8 +4,10 @@ from .services.model_service import predict_burned_area
 from .preprocessing.feature_processor import preprocess_features
 from .services.evaluation_service import get_evaluation_record
 from .services.map_service import get_wildfire_locations
-from .services.history_service import get_historical_wildfires
-
+from .services.history_service import (
+    get_historical_wildfires,
+    get_historical_record_details,
+)
 
 def create_app():
     app = Flask(__name__)
@@ -181,5 +183,21 @@ def create_app():
                 "message": str(error),
             }), 400
 
+
+    @app.get("/api/wildfires/history/<int:record_id>")
+    def wildfire_history_details(record_id):
+        try:
+            result = get_historical_record_details(record_id)
+
+            return jsonify({
+                "status": "success",
+                "record": result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 404
 
     return app

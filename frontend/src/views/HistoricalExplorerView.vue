@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
 import {
   getHistoricalWildfires,
+  getHistoricalWildfireDetails,
   type HistoricalWildfireRecord,
+  type HistoricalWildfireDetails,
   type HistoricalWildfireSortField,
   type HistoricalWildfireSortOrder,
 } from '@/services/historicalWildfireService'
@@ -10,6 +12,89 @@ import {
 const records = ref<HistoricalWildfireRecord[]>([])
 const loading = ref(false)
 const error = ref('')
+
+const selectedRecord = ref<HistoricalWildfireDetails | null>(null)
+const detailsLoading = ref(false)
+const detailsError = ref('')
+const detailsVisible = ref(false)
+const modalDialog = ref<HTMLElement | null>(null)
+const requestedRecordId = ref<number | null>(null)
+let previouslyFocused: HTMLElement | null = null
+let previousBodyOverflow = ''
+let detailsRequestCounter = 0
+
+// Field labels and units follow the original Mesogeos CSV names.
+// Unverified units (such as wind_speed and solar_radiation) are not assumed.
+const measurementGroups = [
+  {
+    title: 'Weather & atmosphere',
+    icon: 'pi-cloud',
+    fields: [
+      { key: 'temperature_c', label: 'Temperature', unit: '°C' },
+      { key: 'dew_point_c', label: 'Dew point', unit: '°C' },
+      { key: 'relative_humidity', label: 'Relative humidity', unit: '%' },
+      { key: 'wind_speed', label: 'Wind speed', unit: '' },
+      { key: 'wind_direction', label: 'Wind direction', unit: '°' },
+      { key: 'rainfall_mm', label: 'Rainfall', unit: 'mm' },
+      { key: 'surface_pressure', label: 'Surface pressure', unit: '' },
+      { key: 'solar_radiation', label: 'Solar radiation', unit: '' },
+    ],
+  },
+  {
+    title: 'Vegetation & soil',
+    icon: 'pi-sun',
+    fields: [
+      { key: 'ndvi', label: 'NDVI', unit: '' },
+      { key: 'lai', label: 'Leaf area index (LAI)', unit: '' },
+      { key: 'soil_moisture', label: 'Soil moisture', unit: '' },
+    ],
+  },
+  {
+    title: 'Terrain',
+    icon: 'pi-compass',
+    fields: [
+      { key: 'elevation', label: 'Elevation', unit: '' },
+      { key: 'slope_degrees', label: 'Slope', unit: '°' },
+      { key: 'aspect', label: 'Aspect', unit: '' },
+      { key: 'curvature', label: 'Curvature', unit: '' },
+    ],
+  },
+  {
+    title: 'Human & infrastructure',
+    icon: 'pi-map-marker',
+    fields: [
+      { key: 'roads_distance_km', label: 'Distance to roads', unit: 'km' },
+      { key: 'population', label: 'Population indicator', unit: '' },
+    ],
+  },
+  {
+    title: 'Land-cover indicators',
+    icon: 'pi-th-large',
+    fields: [
+      { key: 'lc_agriculture', label: 'Agriculture', unit: '' },
+      { key: 'lc_forest', label: 'Forest', unit: '' },
+      { key: 'lc_grassland', label: 'Grassland', unit: '' },
+      { key: 'lc_settlement', label: 'Settlement', unit: '' },
+      { key: 'lc_shrubland', label: 'Shrubland', unit: '' },
+      { key: 'lc_sparse_vegetation', label: 'Sparse vegetation', unit: '' },
+      { key: 'lc_water_bodies', label: 'Water bodies', unit: '' },
+      { key: 'lc_wetland', label: 'Wetland', unit: '' },
+    ],
+  },
+  {
+    title: 'Original record metadata',
+    icon: 'pi-database',
+    fields: [
+      { key: 'date', label: 'Date', unit: '' },
+      { key: 'year', label: 'Year', unit: '' },
+      { key: 'month', label: 'Month', unit: '' },
+      { key: 'day_of_year', label: 'Day of year', unit: '' },
+      { key: 'latitude', label: 'Latitude', unit: '°' },
+      { key: 'longitude', label: 'Longitude', unit: '°' },
+      { key: 'burned_area_ha', label: 'Recorded burned area', unit: 'ha' },
+    ],
+  },
+]
 
 const currentPage = ref(1)
 const pageSize = 25
@@ -96,6 +181,54 @@ function formatMeasurement(value: number | null, suffix: string): string {
   return `${formatNumber(value)} ${suffix}`
 }
 
+function detailValue(value: string | number | null | undefined, unit: string): string {
+  if (value === null || value === undefined || value === '') return 'Not available'
+  if (typeof value === 'string') return value
+  return `${formatNumber(value)}${unit ? ` ${unit}` : ''}`
+}
+
+function closeRecordDetails() {
+  ++detailsRequestCounter
+  selectedRecord.value = null
+  detailsVisible.value = false
+  detailsLoading.value = false
+  detailsError.value = ''
+  requestedRecordId.value = null
+  document.body.style.overflow = previousBodyOverflow
+  previouslyFocused?.focus()
+  previouslyFocused = null
+}
+
+async function selectRecord(recordId: number) {
+  const requestId = ++detailsRequestCounter
+  selectedRecord.value = null
+  detailsError.value = ''
+  requestedRecordId.value = recordId
+  if (!detailsVisible.value) {
+    previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    previousBodyOverflow = document.body.style.overflow
+  }
+  detailsVisible.value = true
+  detailsLoading.value = true
+  document.body.style.overflow = 'hidden'
+
+  await nextTick()
+  modalDialog.value?.focus()
+
+  try {
+    const result = await getHistoricalWildfireDetails(recordId)
+    if (!active || requestId !== detailsRequestCounter) return
+    selectedRecord.value = result
+  } catch (cause) {
+    if (!active || requestId !== detailsRequestCounter) return
+    detailsError.value =
+      cause instanceof Error ? cause.message : 'Unable to load wildfire record details.'
+  } finally {
+    if (active && requestId === detailsRequestCounter) detailsLoading.value = false
+  }
+}
+
 function burnedAreaClass(area: number): string {
   if (area >= 2000) return 'severity-extreme'
   if (area >= 500) return 'severity-high'
@@ -104,6 +237,7 @@ function burnedAreaClass(area: number): string {
 }
 
 async function loadRecords(page = currentPage.value) {
+  closeRecordDetails()
   const requestId = ++requestCounter
 
   loading.value = true
@@ -193,6 +327,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   active = false
   requestCounter += 1
+  detailsRequestCounter += 1
+  if (detailsVisible.value) document.body.style.overflow = previousBodyOverflow
 })
 </script>
 
@@ -427,7 +563,17 @@ onBeforeUnmount(() => {
               :key="record.record_id"
               class="transition-colors hover:bg-[var(--wi-surface-alt)]"
             >
-              <td class="px-4 py-3 font-semibold text-[var(--wi-teal)]">#{{ record.record_id }}</td>
+              <td class="px-4 py-3 font-semibold text-[var(--wi-teal)]">
+                <button
+                  type="button"
+                  class="rounded font-semibold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--wi-teal)]"
+                  :aria-label="`View details for wildfire record ${record.record_id}`"
+                  @click="selectRecord(record.record_id)"
+                >
+                  #{{ record.record_id }}
+                  <i class="pi pi-external-link ml-1 text-[10px]" aria-hidden="true"></i>
+                </button>
+              </td>
 
               <td class="px-4 py-3 whitespace-nowrap text-[var(--wi-text)]">
                 {{ formatDate(record.date) }}
@@ -522,9 +668,168 @@ onBeforeUnmount(() => {
       for some observations.
     </p>
   </div>
+
+  <!-- Record details modal. Teleport keeps it above the fixed dashboard sidebar. -->
+  <Teleport to="body">
+    <div
+      v-if="detailsVisible"
+      class="wi-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6"
+    >
+      <div
+        class="absolute inset-0 bg-[#030b15]/80 backdrop-blur-sm"
+        @click="closeRecordDetails"
+      ></div>
+
+      <section
+        ref="modalDialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="history-detail-title"
+        tabindex="-1"
+        class="wi-history-modal relative flex max-h-[92dvh] w-full max-w-[1060px] flex-col overflow-hidden rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] shadow-2xl outline-none"
+        @keydown.esc.stop="closeRecordDetails"
+      >
+        <!-- High-contrast research header -->
+        <header
+          class="relative shrink-0 overflow-hidden border-b border-[var(--wi-border)] px-5 py-4 sm:px-6"
+        >
+          <div
+            class="pointer-events-none absolute -right-10 -top-24 h-48 w-48 rounded-full bg-[var(--wi-orange)] opacity-[0.07] blur-3xl"
+          ></div>
+          <div class="relative flex items-start justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] text-[var(--wi-orange)]"
+              >
+                <i class="pi pi-chart-scatter text-lg" aria-hidden="true"></i>
+              </div>
+              <div>
+                <p
+                  class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--wi-orange)]"
+                >
+                  Mesogeos · Historical observation dossier
+                </p>
+                <h2
+                  id="history-detail-title"
+                  class="mt-1 text-lg font-extrabold text-[var(--wi-text)] sm:text-xl"
+                >
+                  Wildfire Record #{{ selectedRecord?.record_id ?? requestedRecordId }}
+                </h2>
+                <p class="mt-1 text-xs text-[var(--wi-muted)]">
+                  Original environmental and geographical measurements · not a model prediction
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="flex shrink-0 items-center gap-2 rounded-lg border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-3 py-2 text-xs font-semibold text-[var(--wi-text)] hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--wi-teal)]"
+              aria-label="Close wildfire details"
+              @click="closeRecordDetails"
+            >
+              <i class="pi pi-times" aria-hidden="true"></i
+              ><span class="hidden sm:inline">Close</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Only this area scrolls; the list stays in its original position. -->
+        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+          <div
+            v-if="detailsLoading"
+            role="status"
+            class="flex min-h-48 items-center justify-center gap-3 text-sm text-[var(--wi-muted)]"
+          >
+            <i class="pi pi-spinner pi-spin text-[var(--wi-teal)]" aria-hidden="true"></i>
+            Loading original wildfire measurements…
+          </div>
+          <div
+            v-else-if="detailsError"
+            role="alert"
+            class="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400"
+          >
+            <i class="pi pi-exclamation-triangle mr-2" aria-hidden="true"></i>{{ detailsError }}
+          </div>
+          <div v-else-if="selectedRecord" class="space-y-5">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div class="wi-dossier-stat rounded-xl border border-[var(--wi-border)] p-4">
+                <p class="text-[11px] font-semibold text-[var(--wi-muted)]">Recorded burned area</p>
+                <p class="mt-2 text-2xl font-extrabold text-[var(--wi-orange)]">
+                  {{ formatNumber(selectedRecord.burned_area_ha) }} <span class="text-sm">ha</span>
+                </p>
+              </div>
+              <div class="wi-dossier-stat rounded-xl border border-[var(--wi-border)] p-4">
+                <p class="text-[11px] font-semibold text-[var(--wi-muted)]">Country</p>
+                <p class="mt-2 text-lg font-bold text-[var(--wi-text)]">
+                  {{ selectedRecord.country }}
+                </p>
+              </div>
+              <div class="wi-dossier-stat rounded-xl border border-[var(--wi-border)] p-4">
+                <p class="text-[11px] font-semibold text-[var(--wi-muted)]">Observation date</p>
+                <p class="mt-2 text-lg font-bold text-[var(--wi-text)]">
+                  {{ formatDate(selectedRecord.date) }}
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <section
+                v-for="group in measurementGroups"
+                :key="group.title"
+                class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-4"
+              >
+                <h3
+                  class="mb-2 flex items-center gap-2 border-b border-[var(--wi-border)] pb-3 text-xs font-extrabold uppercase tracking-wide text-[var(--wi-text)]"
+                >
+                  <i
+                    :class="['pi', group.icon]"
+                    class="text-[var(--wi-teal)]"
+                    aria-hidden="true"
+                  ></i>
+                  {{ group.title }}
+                </h3>
+                <dl class="divide-y divide-[var(--wi-border)]">
+                  <div
+                    v-for="field in group.fields"
+                    :key="field.key"
+                    class="flex items-start justify-between gap-4 py-2 text-xs"
+                  >
+                    <dt class="text-[var(--wi-muted)]">{{ field.label }}</dt>
+                    <dd class="text-right font-semibold tabular-nums text-[var(--wi-text)]">
+                      {{ detailValue(selectedRecord.measurements[field.key], field.unit) }}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
+            <p class="text-[11px] leading-5 text-[var(--wi-muted)]">
+              Source: Original Mesogeos historical dataset. Values are observations, not XGBoost
+              predictions. Land-cover columns are dataset indicators; missing values are shown as
+              unavailable. Units are included only where established by the source column names.
+            </p>
+          </div>
+        </div>
+        <footer
+          class="flex shrink-0 items-center justify-between gap-3 border-t border-[var(--wi-border)] bg-[var(--wi-surface-alt)] px-5 py-3 text-[11px] text-[var(--wi-muted)] sm:px-6"
+        >
+          <span
+            ><i class="pi pi-database mr-1 text-[var(--wi-teal)]" aria-hidden="true"></i> Mesogeos
+            research dataset</span
+          >
+          <span>Press Esc or Close to return to observations</span>
+        </footer>
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
+.wi-history-modal {
+  box-shadow: 0 28px 95px rgba(0, 0, 0, 0.45);
+}
+.wi-dossier-stat {
+  background: var(--wi-surface-alt);
+}
+
 .history-select {
   width: 100%;
   min-width: 0;

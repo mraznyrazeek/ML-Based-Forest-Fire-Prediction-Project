@@ -1,10 +1,9 @@
 
 import math
-
 import numpy as np
 import pandas as pd
-
 from .map_service import load_wildfire_locations
+from functools import lru_cache
 
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
@@ -126,4 +125,70 @@ def get_historical_wildfires(
         "sort_by": sort_by,
         "sort_order": sort_order,
         "records": records,
+    }
+
+
+@lru_cache(maxsize=1)
+def load_historical_details():
+    """Load the complete original Mesogeos dataset once."""
+    from .map_service import DATASET_PATH
+
+    if not DATASET_PATH.is_file():
+        raise FileNotFoundError(
+            f"Wildfire dataset not found: {DATASET_PATH}"
+        )
+
+    return pd.read_csv(DATASET_PATH)
+
+
+def get_historical_record_details(record_id: int):
+    """Retrieve all available original measurements for one wildfire."""
+
+    if isinstance(record_id, bool) or not isinstance(record_id, int):
+        raise ValueError("Record ID must be an integer.")
+
+    # Reuse the map service's validated historical record IDs.
+    valid_records = load_wildfire_locations()
+
+    matched = valid_records[
+        valid_records["record_id"] == record_id
+    ]
+
+    if matched.empty:
+        raise ValueError(
+            f"Historical wildfire record {record_id} was not found."
+        )
+
+    summary = matched.iloc[0]
+
+    # Original row positions are preserved by the map service.
+    full_dataset = load_historical_details()
+    observation = full_dataset.iloc[record_id]
+
+    measurements = {}
+
+    for column, value in observation.items():
+        if pd.isna(value):
+            measurements[column] = None
+        elif isinstance(value, (np.integer,)):
+            measurements[column] = int(value)
+        elif isinstance(value, (np.floating,)):
+            measurements[column] = (
+                float(value) if np.isfinite(value) else None
+            )
+        else:
+            measurements[column] = value
+
+    return {
+        "record_id": record_id,
+        "date": summary["date"],
+        "year": int(summary["year"]),
+        "country": summary["country"],
+        "latitude": float(summary["latitude"]),
+        "longitude": float(summary["longitude"]),
+        "burned_area_ha": round(
+            float(summary["burned_area_ha"]), 2
+        ),
+        "measurements": measurements,
+        "dataset": "Mesogeos historical wildfire observations",
     }
