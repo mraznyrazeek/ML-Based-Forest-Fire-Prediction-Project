@@ -30,6 +30,11 @@ const router = createRouter({
           name: 'historical-explorer',
           component: () => import('@/views/HistoricalExplorerView.vue'),
         },
+        {
+          path: 'analytics',
+          name: 'environmental-analytics',
+          component: () => import('@/views/EnvironmentalAnalyticsView.vue'),
+        },
       ],
     },
   ],

@@ -8,6 +8,10 @@ from .services.history_service import (
     get_historical_wildfires,
     get_historical_record_details,
 )
+from .services.analytics_service import (
+    get_annual_wildfire_trends,
+    get_environmental_relationships,
+)
 
 def create_app():
     app = Flask(__name__)
@@ -199,5 +203,39 @@ def create_app():
                 "status": "error",
                 "message": str(error),
             }), 404
+
+    
+    @app.get("/api/analytics/annual-trends")
+    def annual_wildfire_analytics():
+        try:
+            result = get_annual_wildfire_trends()
+
+            return jsonify({
+                "status": "success",
+                **result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
+
+
+    @app.get("/api/analytics/environmental-relationships")
+    def environmental_relationship_analytics():
+        try:
+            result = get_environmental_relationships()
+
+            return jsonify({
+                "status": "success",
+                **result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
 
     return app
