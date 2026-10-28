@@ -3,7 +3,13 @@ from .services.distribution_service import get_burned_area_distribution
 from flask import Flask, jsonify, request
 from .services.model_service import predict_burned_area
 from .preprocessing.feature_processor import preprocess_features
-from .services.evaluation_service import get_evaluation_record
+
+from .services.evaluation_service import (
+    get_evaluation_record,
+    get_model_performance_summary,
+    get_model_feature_importance,
+)
+
 from .services.map_service import get_wildfire_locations
 from .services.history_service import (
     get_historical_wildfires,
@@ -279,5 +285,40 @@ def create_app():
     def burned_area_distribution_analytics():
         result = get_burned_area_distribution()
         return jsonify({"status": "success", **result}), 200
+
+
+    @app.get("/api/model-insights/performance")
+    def model_insights_performance():
+        try:
+            result = get_model_performance_summary()
+
+            return jsonify({
+                "status": "success",
+                **result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
+
+
+    @app.get("/api/model-insights/feature-importance")
+    def model_insights_feature_importance():
+        try:
+            result = get_model_feature_importance()
+
+            return jsonify({
+                "status": "success",
+                **result,
+            }), 200
+
+        except (ValueError, TypeError) as error:
+            return jsonify({
+                "status": "error",
+                "message": str(error),
+            }), 400
+
 
     return app

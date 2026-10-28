@@ -106,3 +106,165 @@ def get_evaluation_record(record_id: int):
             "relative_humidity": float(record.iloc[0]["relative_humidity"]),
         },
     }
+
+
+@lru_cache(maxsize=1)
+def get_model_performance_summary():
+    """Evaluate the saved XGBoost model on the held-out test set."""
+
+    from sklearn.metrics import (
+        mean_absolute_error,
+        mean_squared_error,
+        median_absolute_error,
+        r2_score,
+    )
+
+    X_test, actual_ha, model = load_evaluation_data()
+
+    prediction_log = model.predict(X_test)
+    predicted_ha = np.expm1(prediction_log)
+
+    if (
+        not np.isfinite(predicted_ha).all()
+        or np.any(predicted_ha < 0)
+    ):
+        raise ValueError("Invalid predictions in evaluation results.")
+
+    absolute_errors = np.abs(predicted_ha - actual_ha)
+    signed_errors = predicted_ha - actual_ha
+
+    size_edges = [0, 100, 500, 1000, 5000, np.inf]
+    size_labels = [
+        "0–100 ha",
+        "100–500 ha",
+        "500–1,000 ha",
+        "1,000–5,000 ha",
+        "5,000+ ha",
+    ]
+
+    evaluation = pd.DataFrame({
+        "actual_ha": actual_ha,
+        "predicted_ha": predicted_ha,
+        "absolute_error_ha": absolute_errors,
+        "signed_error_ha": signed_errors,
+    })
+
+    evaluation["size_group"] = pd.cut(
+        evaluation["actual_ha"],
+        bins=size_edges,
+        labels=size_labels,
+        include_lowest=True,
+    )
+
+    grouped = (
+        evaluation.groupby(
+            "size_group",
+            observed=True,
+        )
+        .agg(
+            observation_count=("actual_ha", "size"),
+            median_actual_ha=("actual_ha", "median"),
+            median_predicted_ha=("predicted_ha", "median"),
+            mean_absolute_error_ha=("absolute_error_ha", "mean"),
+            mean_signed_error_ha=("signed_error_ha", "mean"),
+        )
+        .reset_index()
+    )
+
+    error_groups = []
+
+    for row in grouped.itertuples(index=False):
+        error_groups.append({
+            "size_group": str(row.size_group),
+            "observation_count": int(row.observation_count),
+            "median_actual_ha": round(float(row.median_actual_ha), 2),
+            "median_predicted_ha": round(float(row.median_predicted_ha), 2),
+            "mean_absolute_error_ha": round(
+                float(row.mean_absolute_error_ha), 2
+            ),
+            "mean_signed_error_ha": round(
+                float(row.mean_signed_error_ha), 2
+            ),
+        })
+
+    return {
+        "model": "Optimized XGBoost",
+        "dataset": "Mesogeos held-out test set",
+        "test_observations": int(len(X_test)),
+        "feature_count": int(X_test.shape[1]),
+        "metrics": {
+            "mae_ha": round(
+                float(mean_absolute_error(actual_ha, predicted_ha)), 2
+            ),
+            "rmse_ha": round(
+                float(np.sqrt(mean_squared_error(actual_ha, predicted_ha))), 2
+            ),
+            "median_absolute_error_ha": round(
+                float(median_absolute_error(actual_ha, predicted_ha)), 2
+            ),
+            "r2": round(float(r2_score(actual_ha, predicted_ha)), 4),
+            "mean_signed_error_ha": round(
+                float(np.mean(signed_errors)), 2
+            ),
+        },
+        "prediction_range": {
+            "actual_min_ha": round(float(actual_ha.min()), 2),
+            "actual_max_ha": round(float(actual_ha.max()), 2),
+            "predicted_min_ha": round(float(predicted_ha.min()), 2),
+            "predicted_max_ha": round(float(predicted_ha.max()), 2),
+        },
+        "prediction_direction": {
+            "overpredictions": int(np.sum(signed_errors > 0)),
+            "underpredictions": int(np.sum(signed_errors < 0)),
+            "exact_predictions": int(np.sum(signed_errors == 0)),
+        },
+        "error_by_size": error_groups,
+    }
+
+
+@lru_cache(maxsize=1)
+def get_model_feature_importance():
+    """Return normalized XGBoost gain importance for all model features."""
+
+    model, feature_names = load_model()
+
+    booster = model.get_booster()
+
+    # Gain measures average improvement from splits using each feature.
+    raw_scores = booster.get_score(importance_type="gain")
+
+    scores = np.array(
+        [float(raw_scores.get(feature, 0.0)) for feature in feature_names],
+        dtype=float,
+    )
+
+    if not np.isfinite(scores).all() or np.any(scores < 0):
+        raise ValueError("Invalid XGBoost feature importance values.")
+
+    total = float(scores.sum())
+
+    if total <= 0:
+        raise ValueError("No positive feature importance values found.")
+
+    normalized = scores / total
+
+    features = [
+        {
+            "feature": str(feature),
+            "importance": round(float(score), 8),
+            "importance_percent": round(float(score) * 100, 4),
+        }
+        for feature, score in zip(feature_names, normalized)
+    ]
+
+    features.sort(key=lambda item: item["importance"], reverse=True)
+
+    return {
+        "model": "Optimized XGBoost",
+        "importance_method": "gain",
+        "feature_count": len(features),
+        "nonzero_features": int(np.count_nonzero(scores)),
+        "zero_importance_features": int(np.sum(scores == 0)),
+        "features": features,
+    }
+

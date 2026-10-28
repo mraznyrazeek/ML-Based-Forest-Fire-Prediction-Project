@@ -35,6 +35,11 @@ const router = createRouter({
           name: 'environmental-analytics',
           component: () => import('@/views/EnvironmentalAnalyticsView.vue'),
         },
+        {
+          path: 'model-insights',
+          name: 'model-insights',
+          component: () => import('@/views/ModelInsightsView.vue'),
+        },
       ],
     },
   ],
