@@ -25,6 +25,11 @@ const router = createRouter({
           name: 'wildfire-map',
           component: () => import('@/views/WildfireMapView.vue'),
         },
+        {
+          path: 'history',
+          name: 'historical-explorer',
+          component: () => import('@/views/HistoricalExplorerView.vue'),
+        },
       ],
     },
   ],
