@@ -41,8 +41,12 @@ const navigation = [
       class="flex items-center justify-between border-b border-[var(--wi-border)] bg-[var(--wi-surface)] px-5 py-4 lg:hidden"
     >
       <div class="flex items-center gap-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#071827]">
-          <i class="pi pi-bolt text-lg text-orange-400" aria-hidden="true"></i>
+        <div class="h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-[#071827]">
+          <img
+            src="/wildfire-intelligence-icon.png"
+            alt="Wildfire Intelligence logo"
+            class="h-full w-full object-cover"
+          />
         </div>
 
         <span class="font-bold text-[var(--wi-text)]"> Wildfire Intelligence </span>
@@ -79,10 +83,12 @@ const navigation = [
       <!-- Branding -->
       <div class="relative border-b border-white/10 px-6 py-7">
         <div class="flex items-center gap-3">
-          <div
-            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500/10 ring-1 ring-orange-400/20"
-          >
-            <i class="pi pi-bolt text-2xl text-orange-400" aria-hidden="true"></i>
+          <div class="h-12 w-12 shrink-0 overflow-hidden rounded-2xl ring-1 ring-orange-400/20">
+            <img
+              src="/wildfire-intelligence-icon.png"
+              alt="Wildfire Intelligence logo"
+              class="h-full w-full object-cover"
+            />
           </div>
 
           <div>
