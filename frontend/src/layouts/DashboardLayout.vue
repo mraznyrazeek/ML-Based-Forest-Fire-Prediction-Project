@@ -9,13 +9,21 @@ const sidebarOpen = ref(false)
 const { theme, toggleTheme } = useTheme()
 
 const navigation = [
-  { label: 'Overview', path: '/', icon: 'pi pi-home' },
+  {
+    label: 'Overview',
+    path: '/',
+    icon: 'pi pi-home',
+  },
   {
     label: 'Burned Area Prediction',
     path: '/prediction',
     icon: 'pi pi-chart-line',
   },
-  { label: 'Wildfire Map', path: '/map', icon: 'pi pi-map' },
+  {
+    label: 'Wildfire Map',
+    path: '/map',
+    icon: 'pi pi-map',
+  },
   {
     label: 'Historical Wildfires',
     path: '/history',
@@ -30,6 +38,11 @@ const navigation = [
     label: 'Model Insights',
     path: '/model-insights',
     icon: 'pi pi-cog',
+  },
+  {
+    label: 'Scientific Research',
+    path: '/research',
+    icon: 'pi pi-book',
   },
 ]
 </script>
@@ -70,18 +83,19 @@ const navigation = [
       @click="sidebarOpen = false"
     ></div>
 
-    <!-- Scientific sidebar -->
+    <!-- Main sidebar -->
     <aside
       class="fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-hidden bg-[#071827] text-slate-200 shadow-xl transition-transform duration-200 lg:translate-x-0"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
-      <!-- Subtle decorative glow -->
+      <!-- Subtle background decoration -->
       <div
         class="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-teal-500/10 blur-3xl"
       ></div>
 
       <!-- Branding -->
       <div class="relative border-b border-white/10 px-6 py-7">
+        <!-- Application identity -->
         <div class="flex items-center gap-3">
           <div class="h-12 w-12 shrink-0 overflow-hidden rounded-2xl ring-1 ring-orange-400/20">
             <img
@@ -91,23 +105,30 @@ const navigation = [
             />
           </div>
 
-          <div>
+          <div class="min-w-0">
             <h1 class="text-lg font-bold leading-tight text-white">Wildfire Intelligence</h1>
 
             <p class="mt-1 text-xs text-slate-400">Burned Area Prediction</p>
           </div>
         </div>
 
-        <div class="mt-5 flex items-center gap-2">
-          <span class="h-1.5 w-1.5 rounded-full bg-teal-400"></span>
+        <!-- Machine Learning Research identity -->
 
-          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-300">
-            Scientific Research Platform
-          </span>
+        <!-- Compact Machine Learning Research identity -->
+        <div class="mt-4 flex items-center gap-2.5 border-t border-white/10 pt-4">
+          <i class="pi pi-database shrink-0 text-sm text-teal-400" aria-hidden="true"></i>
+
+          <div class="min-w-0">
+            <p class="text-[10px] font-medium leading-4 text-teal-300">Machine Learning Research</p>
+
+            <p class="mt-0.5 text-xs font-semibold leading-4 text-white">
+              XGBoost Prediction Platform
+            </p>
+          </div>
         </div>
       </div>
 
-      <!-- Navigation -->
+      <!-- Sidebar navigation -->
       <nav class="relative flex-1 space-y-1 overflow-y-auto px-3 py-6" aria-label="Main navigation">
         <RouterLink
           v-for="item in navigation"
@@ -127,11 +148,10 @@ const navigation = [
         </RouterLink>
       </nav>
 
-      <!-- Sidebar footer -->
+      <!-- Sidebar footer: appearance only -->
       <div class="relative border-t border-white/10 p-4">
-        <!-- Global Light / Dark Mode Toggle -->
         <div
-          class="mb-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+          class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3"
         >
           <div class="flex items-center gap-3">
             <i
@@ -149,6 +169,7 @@ const navigation = [
             </div>
           </div>
 
+          <!-- Light / Dark mode switch -->
           <button
             type="button"
             role="switch"
@@ -170,25 +191,10 @@ const navigation = [
             </span>
           </button>
         </div>
-
-        <!-- Machine Learning Engine -->
-        <div class="rounded-xl border border-teal-400/15 bg-white/5 px-4 py-3">
-          <div class="flex items-center gap-3">
-            <i class="pi pi-database text-lg text-teal-400" aria-hidden="true"></i>
-
-            <div>
-              <p class="text-xs text-slate-400">Machine Learning Research</p>
-
-              <p class="mt-1 text-sm font-semibold text-white">XGBoost Prediction Engine</p>
-            </div>
-          </div>
-        </div>
-
-        <p class="mt-3 text-center text-[11px] text-slate-500">Research Prototype · v1.0</p>
       </div>
     </aside>
 
-    <!-- Main content -->
+    <!-- Main application content -->
     <main class="min-h-screen lg:ml-72">
       <div class="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10">
         <RouterView />

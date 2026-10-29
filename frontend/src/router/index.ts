@@ -40,6 +40,11 @@ const router = createRouter({
           name: 'model-insights',
           component: () => import('@/views/ModelInsightsView.vue'),
         },
+        {
+          path: 'research',
+          name: 'scientific-research',
+          component: () => import('@/views/ScientificResearchView.vue'),
+        },
       ],
     },
   ],

@@ -175,6 +175,15 @@ const researchModules = [
     icon: 'pi pi-cog',
     color: 'var(--wi-orange)',
   },
+
+  {
+    title: 'Scientific Research',
+    description:
+      'Explore the scientific findings, model experiments, prediction limitations and research conclusions.',
+    path: '/research',
+    icon: 'pi pi-book',
+    color: 'var(--wi-blue)',
+  },
 ]
 </script>
 
