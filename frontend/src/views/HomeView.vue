@@ -1,35 +1,87 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import ScientificMetricCard from '@/components/dashboard/ScientificMetricCard.vue'
+import { getModelPerformance, type ModelPerformanceResponse } from '@/services/modelInsightsService'
 
-const modelMetrics = [
-  {
-    label: 'R² Score (Log Scale)',
-    value: '0.2475',
-    description: 'Explained variance on the log-transformed test target.',
-    icon: 'pi pi-chart-bar',
-    tone: 'teal' as const,
-  },
-  {
-    label: 'R² Score (Original Scale)',
-    value: '0.0363',
-    description: 'Explained variance in actual burned area (hectares).',
-    icon: 'pi pi-chart-line',
-    tone: 'blue' as const,
-  },
-  {
-    label: 'Mean Absolute Error',
-    value: '≈ 350 ha',
-    description: 'Average absolute prediction error on the test dataset.',
-    icon: 'pi pi-bullseye',
-    tone: 'orange' as const,
-  },
-]
+const performance = ref<ModelPerformanceResponse | null>(null)
+const performanceLoading = ref(true)
+const performanceError = ref('')
+
+async function loadOverviewPerformance() {
+  performanceLoading.value = true
+  performanceError.value = ''
+
+  try {
+    performance.value = await getModelPerformance()
+  } catch (cause) {
+    performanceError.value =
+      cause instanceof Error ? cause.message : 'Unable to load model performance.'
+  } finally {
+    performanceLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadOverviewPerformance()
+})
+
+// const modelMetrics = [
+//   {
+//     label: 'R² Score (Log Scale)',
+//     value: '0.2475',
+//     description: 'Explained variance on the log-transformed test target.',
+//     icon: 'pi pi-chart-bar',
+//     tone: 'teal' as const,
+//   },
+//   {
+//     label: 'R² Score (Original Scale)',
+//     value: '0.0363',
+//     description: 'Explained variance in actual burned area (hectares).',
+//     icon: 'pi pi-chart-line',
+//     tone: 'blue' as const,
+//   },
+//   {
+//     label: 'Mean Absolute Error',
+//     value: '≈ 350 ha',
+//     description: 'Average absolute prediction error on the test dataset.',
+//     icon: 'pi pi-bullseye',
+//     tone: 'orange' as const,
+//   },
+// ]
+
+const modelMetrics = computed(() => {
+  const metrics = performance.value?.metrics
+
+  return [
+    {
+      label: 'R² Score (Original Scale)',
+      value: metrics ? metrics.r2.toFixed(4) : '—',
+      description: 'Explained variance in actual burned area (hectares).',
+      icon: 'pi pi-chart-line',
+      tone: 'teal' as const,
+    },
+    {
+      label: 'Mean Absolute Error',
+      value: metrics ? `${metrics.mae_ha.toFixed(2)} ha` : '—',
+      description: 'Average absolute prediction error on the held-out test set.',
+      icon: 'pi pi-bullseye',
+      tone: 'orange' as const,
+    },
+    {
+      label: 'Root Mean Squared Error',
+      value: metrics ? `${metrics.rmse_ha.toFixed(2)} ha` : '—',
+      description: 'Prediction error metric that gives greater weight to large errors.',
+      icon: 'pi pi-chart-bar',
+      tone: 'blue' as const,
+    },
+  ]
+})
 
 const datasetMetrics = [
   {
-    label: 'Research Records',
+    label: 'Model-Ready Records',
     value: '11,303',
-    description: 'Unique records after data cleaning and deduplication.',
+    description: 'Observations included in the final training and testing datasets.',
     icon: 'pi pi-database',
     tone: 'teal' as const,
   },
@@ -84,6 +136,44 @@ const workflowSteps = [
     description: 'The estimated area is reviewed alongside model limitations and uncertainty.',
     icon: 'pi pi-file',
     tone: 'orange',
+  },
+]
+
+const researchModules = [
+  {
+    title: 'Burned Area Prediction',
+    description: 'Estimate wildfire burned area using the optimized XGBoost model.',
+    path: '/prediction',
+    icon: 'pi pi-chart-line',
+    color: 'var(--wi-orange)',
+  },
+  {
+    title: 'Wildfire Map',
+    description: 'Explore wildfire observations through an interactive geographical map.',
+    path: '/map',
+    icon: 'pi pi-map',
+    color: 'var(--wi-teal)',
+  },
+  {
+    title: 'Historical Wildfires',
+    description: 'Explore historical wildfire records and their characteristics.',
+    path: '/history',
+    icon: 'pi pi-calendar',
+    color: 'var(--wi-blue)',
+  },
+  {
+    title: 'Environmental Analytics',
+    description: 'Investigate seasonal patterns, environmental factors and burned-area trends.',
+    path: '/analytics',
+    icon: 'pi pi-chart-bar',
+    color: 'var(--wi-teal)',
+  },
+  {
+    title: 'Model Insights',
+    description: 'Review performance, feature importance and scientific model evaluation.',
+    path: '/model-insights',
+    icon: 'pi pi-cog',
+    color: 'var(--wi-orange)',
   },
 ]
 </script>
@@ -183,7 +273,42 @@ const workflowSteps = [
         </div>
       </div>
 
-      <div class="grid gap-5 md:grid-cols-3">
+      <!-- <div class="grid gap-5 md:grid-cols-3">
+        <ScientificMetricCard
+          v-for="metric in modelMetrics"
+          :key="metric.label"
+          :label="metric.label"
+          :value="metric.value"
+          :description="metric.description"
+          :icon="metric.icon"
+          :tone="metric.tone"
+        />
+      </div> -->
+
+      <div v-if="performanceLoading" role="status" class="grid gap-5 md:grid-cols-3">
+        <div
+          v-for="index in 3"
+          :key="index"
+          class="h-40 animate-pulse rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] motion-reduce:animate-none"
+        ></div>
+      </div>
+
+      <div
+        v-else-if="performanceError"
+        role="alert"
+        class="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-[var(--wi-text)]"
+      >
+        <p>{{ performanceError }}</p>
+        <button
+          type="button"
+          class="mt-2 font-semibold text-[var(--wi-teal)] underline"
+          @click="loadOverviewPerformance"
+        >
+          Retry loading
+        </button>
+      </div>
+
+      <div v-else class="grid gap-5 md:grid-cols-3">
         <ScientificMetricCard
           v-for="metric in modelMetrics"
           :key="metric.label"
@@ -232,8 +357,10 @@ const workflowSteps = [
         <i class="pi pi-info-circle mt-0.5" aria-hidden="true"></i>
 
         <span>
-          Source: Processed Mesogeos wildfire research dataset. The original extract contained
-          11,305 records before deduplication.
+          Source: Mesogeos wildfire research dataset. The final model-ready dataset contains 11,303
+          observations (9,042 training and 2,261 testing), with 44 engineered features. The earlier
+          extracted dataset contained 11,305 records; the reason for the two-record difference has
+          not yet been verified.
         </span>
       </p>
     </section>
@@ -309,6 +436,60 @@ const workflowSteps = [
           the Burned Area Prediction section.
         </span>
       </p>
+    </section>
+
+    <!-- Research Module Navigation -->
+    <section aria-labelledby="research-modules-heading">
+      <div class="mb-5 flex items-start gap-3">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)] text-[var(--wi-teal)]"
+        >
+          <i class="pi pi-compass text-lg" aria-hidden="true"></i>
+        </div>
+
+        <div>
+          <h2 id="research-modules-heading" class="text-xl font-bold text-[var(--wi-text)]">
+            Explore Research Modules
+          </h2>
+
+          <p class="mt-1 text-sm text-[var(--wi-muted)]">
+            Navigate through the Wildfire Intelligence research platform.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <RouterLink
+          v-for="module in researchModules"
+          :key="module.path"
+          :to="module.path"
+          class="group flex min-h-40 flex-col justify-between rounded-2xl border border-[var(--wi-border)] bg-[var(--wi-surface)] p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[var(--wi-teal)] hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--wi-teal)] motion-reduce:transform-none"
+        >
+          <div>
+            <div class="mb-4 flex items-center justify-between">
+              <div
+                class="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--wi-surface-alt)]"
+                :style="{ color: module.color }"
+              >
+                <i :class="module.icon" class="text-xl" aria-hidden="true"></i>
+              </div>
+
+              <i
+                class="pi pi-arrow-up-right text-sm text-[var(--wi-muted)] transition-colors group-hover:text-[var(--wi-teal)]"
+                aria-hidden="true"
+              ></i>
+            </div>
+
+            <h3 class="text-base font-bold text-[var(--wi-text)]">
+              {{ module.title }}
+            </h3>
+
+            <p class="mt-2 text-sm leading-6 text-[var(--wi-muted)]">
+              {{ module.description }}
+            </p>
+          </div>
+        </RouterLink>
+      </div>
     </section>
 
     <!-- Research Interpretation -->
