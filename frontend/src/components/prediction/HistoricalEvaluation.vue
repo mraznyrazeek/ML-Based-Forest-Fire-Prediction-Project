@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import {
   getHistoricalEvaluation,
   type HistoricalEvaluationResult,
@@ -10,6 +10,7 @@ const evaluation = ref<HistoricalEvaluationResult | null>(null)
 const loading = ref(false)
 const error = ref('')
 const totalRecords = ref(2261)
+const barsVisible = ref(false)
 
 let requestVersion = 0
 
@@ -48,7 +49,7 @@ async function loadRecord() {
   const id = recordId.value
   const version = ++requestVersion
 
-  evaluation.value = null
+  //evaluation.value = null
   error.value = ''
 
   if (id === null || !Number.isInteger(id) || id < 0 || id >= totalRecords.value) {
@@ -64,8 +65,22 @@ async function loadRecord() {
 
     if (version !== requestVersion) return
 
+    // evaluation.value = result
+    // totalRecords.value = result.total_test_records
+    barsVisible.value = false
+
     evaluation.value = result
     totalRecords.value = result.total_test_records
+
+    await nextTick()
+
+    if (version !== requestVersion) return
+
+    requestAnimationFrame(() => {
+      if (version === requestVersion) {
+        barsVisible.value = true
+      }
+    })
   } catch (cause) {
     if (version !== requestVersion) return
 
@@ -153,14 +168,23 @@ onMounted(() => {
     </div>
 
     <!-- Loading state -->
-    <div
+    <!-- <div
       v-if="loading"
       class="rounded-xl border border-[var(--wi-border)] bg-[var(--wi-surface-alt)] p-5 text-sm text-[var(--wi-blue)]"
       role="status"
     >
       <i class="pi pi-spin pi-spinner mr-2" aria-hidden="true"></i>
       Loading historical evaluation...
-    </div>
+    </div> -->
+
+    <span
+      v-if="loading"
+      role="status"
+      class="inline-flex items-center gap-2 text-xs font-medium text-[var(--wi-teal)]"
+    >
+      <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+      Updating record...
+    </span>
 
     <!-- Error state -->
     <div
@@ -172,7 +196,7 @@ onMounted(() => {
       {{ error }}
     </div>
 
-    <template v-if="evaluation && !loading">
+    <template v-if="evaluation">
       <!-- Actual and predicted burned area -->
       <div class="grid gap-4 sm:grid-cols-2">
         <div
@@ -231,8 +255,8 @@ onMounted(() => {
 
             <div class="h-3 overflow-hidden rounded-full bg-[var(--wi-surface-alt)]">
               <div
-                class="h-full rounded-full bg-[var(--wi-orange)] transition-all duration-300"
-                :style="{ width: `${actualWidth}%` }"
+                class="h-full rounded-full bg-[var(--wi-orange)] transition-[width] duration-700 ease-out motion-reduce:transition-none"
+                :style="{ width: barsVisible ? `${actualWidth}%` : '0%' }"
               ></div>
             </div>
           </div>
@@ -249,8 +273,8 @@ onMounted(() => {
 
             <div class="h-3 overflow-hidden rounded-full bg-[var(--wi-surface-alt)]">
               <div
-                class="h-full rounded-full bg-[var(--wi-teal)] transition-all duration-300"
-                :style="{ width: `${predictedWidth}%` }"
+                class="h-full rounded-full bg-[var(--wi-teal)] transition-[width] duration-900 ease-out motion-reduce:transition-none"
+                :style="{ width: barsVisible ? `${predictedWidth}%` : '0%' }"
               ></div>
             </div>
           </div>
