@@ -358,8 +358,8 @@ async function submitPrediction() {
           <h2 class="text-lg font-bold text-[var(--wi-text)]">Prediction Output</h2>
 
           <p class="mt-2 text-xs leading-5 text-[var(--wi-muted)]">
-            Estimates the eventual burned area of an existing wildfire using the Flask API and
-            optimized XGBoost research model.
+            Predicts the estimated final burned area of an existing wildfire using machine learning
+            and environmental data.
           </p>
 
           <div
@@ -399,8 +399,8 @@ async function submitPrediction() {
             ></i>
             <span>{{
               prediction
-                ? 'Prediction received from Flask API'
-                : 'Flask model connected for local development'
+                ? 'Prediction received successfully'
+                : 'Model connected for local development'
             }}</span>
           </div>
         </div>

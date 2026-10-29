@@ -246,18 +246,6 @@ const researchModules = [
             <i class="pi pi-chart-line mr-2" aria-hidden="true"></i>
             XGBoost Model
           </span>
-
-          <span
-            class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
-            :style="{
-              color: 'var(--wi-orange)',
-              borderColor: 'var(--wi-border)',
-              backgroundColor: 'var(--wi-surface-alt)',
-            }"
-          >
-            <i class="pi pi-info-circle mr-2" aria-hidden="true"></i>
-            Research Prototype
-          </span>
         </div>
       </div>
     </header>
@@ -277,7 +265,7 @@ const researchModules = [
           </h2>
 
           <p class="mt-1 text-sm text-[var(--wi-muted)]">
-            Optimized XGBoost model — held-out test dataset
+            Optimized XGBoost model - held-out test dataset
           </p>
         </div>
       </div>
@@ -345,7 +333,7 @@ const researchModules = [
           </h2>
 
           <p class="mt-1 text-sm text-[var(--wi-muted)]">
-            Historical wildfire research data — processed dataset
+            Historical wildfire research data - processed dataset
           </p>
         </div>
       </div>
@@ -542,7 +530,7 @@ const researchModules = [
     <footer class="border-t border-[var(--wi-border)] pt-5">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-xs text-[var(--wi-muted)]">
-          Wildfire Intelligence — ML-Based Forest Fire Burned Area Prediction
+          Wildfire Intelligence - ML-Based Forest Fire Burned Area Prediction
         </p>
 
         <span class="text-xs font-medium text-[var(--wi-teal)]">
