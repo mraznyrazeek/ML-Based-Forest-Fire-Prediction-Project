@@ -434,12 +434,33 @@ const experimentOptions = computed<ChartOptions<'line'>>(() => ({
   background: var(--wi-surface);
   border: 1px solid var(--wi-border);
 }
+
 .research-hero {
   position: relative;
   overflow: hidden;
   border-radius: 28px;
   padding: clamp(24px, 3.5vw, 44px);
+
+  /* Fixed dark scientific background in both themes */
+  background-color: #0b1b2d;
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(7, 22, 38, 0.98) 0%,
+      rgba(7, 22, 38, 0.94) 38%,
+      rgba(7, 22, 38, 0.85) 65%,
+      rgba(7, 22, 38, 0.68) 100%
+    ),
+    url('/scientific-research-background.png');
+
+  background-position: center, center;
+  background-size: cover;
+  background-repeat: no-repeat;
+
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #edf4fc;
 }
+
 .hero-glow {
   display: none;
 }
@@ -1080,5 +1101,38 @@ const experimentOptions = computed<ChartOptions<'line'>>(() => ({
   .figure-tag {
     white-space: normal;
   }
+}
+
+/* Scientific hero: consistent contrast in both themes */
+.research-hero .eyebrow {
+  color: #e2e8f0;
+}
+
+.research-hero .hero-copy h1,
+.research-hero .question-text,
+.research-hero .metadata-value {
+  color: #f8fafc;
+}
+
+.research-hero .hero-copy h1 em {
+  color: #fb923c;
+}
+
+.research-hero .hero-lead,
+.research-hero .question-note,
+.research-hero .metadata-label {
+  color: #cbd5e1;
+}
+
+.research-hero .chapter-kicker {
+  color: #2dd4bf;
+}
+
+.research-hero .hero-metadata {
+  border-top-color: rgba(203, 213, 225, 0.22);
+}
+
+.research-hero .metadata-item {
+  border-left-color: rgba(203, 213, 225, 0.22);
 }
 </style>

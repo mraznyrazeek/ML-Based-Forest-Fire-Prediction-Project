@@ -88,6 +88,19 @@ const navigation = [
       class="fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-hidden bg-[#071827] text-slate-200 shadow-xl transition-transform duration-200 lg:translate-x-0"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
+      <!-- Wildfire scientific sidebar background -->
+      <div
+        class="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35"
+        style="background-image: url('/Wildfire%20fire%20sidebar.png')"
+        aria-hidden="true"
+      ></div>
+
+      <!-- Dark overlay for navigation readability -->
+      <div
+        class="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#071827]/85 via-[#071827]/75 to-[#071827]/85"
+        aria-hidden="true"
+      ></div>
+
       <!-- Subtle background decoration -->
       <div
         class="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-teal-500/10 blur-3xl"

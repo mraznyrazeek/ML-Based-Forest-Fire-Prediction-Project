@@ -191,18 +191,31 @@ const researchModules = [
   <div class="space-y-8 text-[var(--wi-text)]">
     <!-- Research dashboard hero -->
     <header
-      class="relative overflow-hidden rounded-3xl border border-[var(--wi-border)] bg-[var(--wi-surface)] px-6 py-7 shadow-sm sm:px-8"
+      class="relative isolate overflow-hidden rounded-3xl border border-[var(--wi-border)] bg-[#0b1b2d] px-6 py-7 shadow-sm sm:px-8"
     >
-      <!-- Subtle theme-aware accents -->
+      <!-- Scientific wildfire background -->
+      <div
+        class="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style="background-image: url('/wildfire-research-background.png')"
+        aria-hidden="true"
+      ></div>
+
+      <!-- Dark gradient for title readability -->
+      <div
+        class="pointer-events-none absolute inset-0 z-0 bg-gradient-to-r from-[#091827]/95 via-[#091827]/85 to-[#091827]/25"
+        aria-hidden="true"
+      ></div>
+
+      <!-- Subtle theme-aware accents
       <div
         class="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[var(--wi-teal)] opacity-[0.055] blur-3xl"
       ></div>
 
       <div
         class="pointer-events-none absolute -bottom-32 right-24 h-56 w-56 rounded-full bg-[var(--wi-orange)] opacity-[0.045] blur-3xl"
-      ></div>
+      ></div> -->
 
-      <div class="relative max-w-3xl">
+      <div class="relative z-10 max-w-3xl">
         <div class="mb-4 flex items-center gap-2">
           <span class="h-2 w-2 rounded-full bg-[var(--wi-teal)]"></span>
 
@@ -211,12 +224,12 @@ const researchModules = [
           </p>
         </div>
 
-        <h1 class="text-3xl font-extrabold tracking-tight text-[var(--wi-text)] sm:text-4xl">
+        <h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
           Forest Fire Burned Area
-          <span class="text-[var(--wi-orange)]"> Prediction </span>
+          <span class="text-[#fb923c]">Prediction</span>
         </h1>
 
-        <p class="mt-4 max-w-2xl text-sm leading-7 text-[var(--wi-muted)] sm:text-base">
+        <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
           Explore the evaluation results of our machine learning model developed to estimate the
           eventual burned area of existing wildfires using environmental and geographical data.
         </p>
